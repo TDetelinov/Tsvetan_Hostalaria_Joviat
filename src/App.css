@@ -1,17 +1,27 @@
 :root {
-  --black: #1a1a1a;
-  --white: #ffffff;
-  --accent: #f39c12; /* Un naranja tipo hostelería */
+  --black: #121212;
+  --accent: #f39c12;
+  --sidebar-width: 260px;
+  --header-height: 70px;
 }
 
-.app-container {
-  font-family: 'Segoe UI', sans-serif;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f4f4f4;
+}
+
+/* ====================
+   CABECERA
+   ==================== */
 .main-header {
   background-color: var(--black);
-  color: var(--white);
-  height: 60px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -19,54 +29,114 @@
   width: 100%;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
-.burger-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.8rem;
+/* El logo ahora es una imagen clickeable */
+.logo-container {
   cursor: pointer;
-  margin-right: 20px;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
+.logo-img {
+  height: 45px; /* Ajusta este tamaño según tu imagen */
+  width: auto;
+  object-fit: contain;
+  /* border: 1px dashed #fff; <- Descomenta esto si quieres ver dónde va la imagen antes de poner la URL */
+}
+
+/* ====================
+   MENÚ LATERAL & CONTENIDO
+   ==================== */
 .sidebar {
   position: fixed;
-  left: -250px; /* Escondido por defecto */
-  top: 60px;
-  width: 250px;
-  height: calc(100vh - 60px);
-  background-color: #2c2c2c;
-  transition: 0.3s;
+  top: var(--header-height);
+  height: calc(100vh - var(--header-height));
+  background: #1f1f1f;
   z-index: 999;
+  padding-top: 20px;
+  overflow-y: auto;
 }
 
-.sidebar.open {
-  left: 0;
+.nav-links { list-style: none; color: white; }
+.nav-links li { padding: 15px 25px; cursor: pointer; transition: 0.2s; }
+.nav-links li:hover { background: var(--accent); padding-left: 30px; }
+.nav-links hr { border: 0; border-top: 1px solid #444; margin: 20px 25px; }
+
+.main-content {
+  padding: 30px;
+  min-height: calc(100vh - var(--header-height));
 }
 
-.sidebar ul {
-  list-style: none;
-  padding: 20px;
-}
-
-.sidebar li {
-  color: white;
-  padding: 15px 0;
-  border-bottom: 1px solid #444;
-  cursor: pointer;
-}
-
-.content {
-  margin-top: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 60vh;
+.construction-banner {
   text-align: center;
+  padding: 50px 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-top: 20px;
 }
 
-.construction-banner h1 {
-  font-size: 2.5rem;
-  color: var(--black);
+/* ====================
+   VERSIÓN ESCRITORIO (PC)
+   ==================== */
+@media (min-width: 769px) {
+  .burger-btn {
+    display: none; /* Ocultamos la hamburguesa en PC */
+  }
+  
+  .sidebar {
+    left: 0;
+    width: var(--sidebar-width);
+  }
+
+  .main-content {
+    margin-top: var(--header-height);
+    margin-left: var(--sidebar-width); /* Empujamos el contenido a la derecha */
+    transition: margin-left 0.3s;
+  }
+}
+
+/* ====================
+   VERSIÓN MÓVIL Y TABLET
+   ==================== */
+@media (max-width: 768px) {
+  .burger-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    margin-right: 15px;
+  }
+
+  .sidebar {
+    left: -280px; /* Escondido por defecto en móvil */
+    width: 280px;
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.open {
+    left: 0; /* Al clicar la hamburguesa, sale */
+  }
+
+  .main-content {
+    margin-top: var(--header-height);
+    margin-left: 0; /* En móvil ocupa todo el ancho */
+  }
+
+  .blur {
+    filter: blur(4px);
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    top: var(--header-height);
+    background: rgba(0,0,0,0.5);
+    z-index: 998;
+  }
 }

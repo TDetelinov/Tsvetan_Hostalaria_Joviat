@@ -1,0 +1,93 @@
+.student-container {
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.list-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.list-header h2 {
+  font-size: 2rem;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.list-header p {
+  color: #666;
+}
+
+/* Rejilla adaptativa */
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 25px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Tarjeta individual */
+.student-card {
+  background: #ffffff;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+}
+
+.student-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+}
+
+.image-wrapper {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+}
+
+.student-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Importante para no deformar caras */
+}
+
+.student-details {
+  padding: 20px;
+  text-align: center;
+}
+
+.student-name {
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.btn-profile {
+  background-color: #1a1a1a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.btn-profile:hover {
+  background-color: #f39c12; /* Color Joviat */
+}
+
+/* Ajustes para Móvil */
+@media (max-width: 480px) {
+  .student-grid {
+    grid-template-columns: 1fr; /* Una sola columna en móviles pequeños */
+  }
+}
