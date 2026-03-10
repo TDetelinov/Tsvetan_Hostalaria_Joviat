@@ -4,13 +4,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Tus credenciales de la consola de Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyB4qzaVYNTIX2OFIdQ9QgcE-f7KV7VUXbc",
-  authDomain: "tsvetanhosteleriajoviat.firebaseapp.com",
-  projectId: "tsvetanhosteleriajoviat",
-  storageBucket: "tsvetanhosteleriajoviat.firebasestorage.app",
-  messagingSenderId: "365829498443",
-  appId: "1:365829498443:web:eafe31480a9aa8bb474fce",
-  measurementId: "G-MWXLN11EXJ"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
 // 1. Inicializa la App
