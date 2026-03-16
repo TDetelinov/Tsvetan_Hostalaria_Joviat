@@ -1,76 +1,53 @@
 import React, { useState } from 'react';
 import StudentList from './StudentList';
+import RestaurantList from './RestaurantList';
 import './App.css';
 
 function App() {
-  // Estado para el menú en móvil
   const [menuOpen, setMenuOpen] = useState(false);
-  // Estado para controlar qué pantalla vemos ('home' o 'students')
   const [currentView, setCurrentView] = useState('home');
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  // Funciones de navegación (cierran el menú en móvil al hacer clic)
-  const goToHome = () => {
-    setCurrentView('home');
-    setMenuOpen(false);
-  };
-
-  const goToStudents = () => {
-    setCurrentView('students');
-    setMenuOpen(false);
-  };
-
   return (
     <div className="app-container">
-      {/* CABECERA NEGRA */}
       <header className="main-header">
-        {/* El botón hamburguesa solo se verá en móvil vía CSS */}
         <button className="burger-btn" onClick={toggleMenu}>
           {menuOpen ? '✕' : '☰'}
         </button>
         
-        {/* LOGO JOVIAT (Imagen clickeable para ir a inicio) */}
-        <div className="logo-container" onClick={goToHome}>
+        <div className="logo-container" onClick={() => setCurrentView('home')}>
           <img 
-            src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" /* <-- Pega aquí tu URL */
-            alt="Joviat Home" 
+            src="URL_LOGOTIP_JOVIAT.png" 
+            alt="Joviat Inici" 
             className="logo-img"
           />
         </div>
       </header>
 
-      {/* MENÚ LATERAL (Siempre visible en PC, desplegable en móvil) */}
       <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <ul className="nav-links">
-          <li onClick={goToHome}>🏠 Inicio</li>
-          <li onClick={goToStudents}>👨‍🎓 Alumnos</li>
-          <li>📍 Modo Mapa</li>
-          <li>🍴 Restaurantes</li>
+          <li onClick={() => {setCurrentView('home'); setMenuOpen(false);}}>🏠 Inici</li>
+          <li onClick={() => {setCurrentView('students'); setMenuOpen(false);}}>👨‍🎓 Alumnes</li>
+          <li onClick={() => {setCurrentView('restaurants'); setMenuOpen(false);}}>🍴 Restaurants</li>
           <hr />
-          <li>🔑 Login Alumno</li>
-          <li>🏢 Login Restaurante</li>
+          <li>🔑 Login Alumne</li>
+          <li>🏢 Login Restaurant</li>
         </ul>
       </nav>
 
-      {/* CONTENIDO PRINCIPAL (Cambia según el currentView) */}
       <main className={`main-content ${menuOpen ? 'blur' : ''}`}>
-        
         {currentView === 'home' && (
           <div className="construction-banner">
-            <h1>🚧 WEB EN CONSTRUCCIÓN 🚧</h1>
-            <p>Proyecto Escuela Joviat - Manresa</p>
-            <p>Selecciona "Alumnos" en el menú para ver la lista.</p>
+            <h1>🚧 WEB EN CONSTRUCCIÓ 🚧</h1>
+            <p>Projecte SDAMV2 - Escola Joviat Manresa</p>
           </div>
         )}
 
-        {currentView === 'students' && (
-          <StudentList />
-        )}
-
+        {currentView === 'students' && <StudentList />}
+        {currentView === 'restaurants' && <RestaurantList />}
       </main>
 
-      {/* OVERLAY PARA MÓVIL (Cierra el menú al clicar fuera) */}
       {menuOpen && <div className="overlay" onClick={toggleMenu}></div>}
     </div>
   );
