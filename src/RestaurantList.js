@@ -2,35 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import RestaurantProfile from './RestaurantProfile';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 
 const RestaurantList = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      try {
-        // Recorda que la col·lecció es diu "Restaurant"
-        const querySnapshot = await getDocs(collection(db, "Restaurant"));
-        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRestaurants(data);
-        setLoading(false);
-      } catch (e) { console.error(e); }
+      const querySnapshot = await getDocs(collection(db, "Restaurant"));
+      setRestaurants(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
     };
     fetchRestaurants();
   }, []);
 
-  const filteredRestaurants = restaurants.filter(r => 
-    r.Name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  if (selectedRestaurant) return <RestaurantProfile restaurant={selectedRestaurant} onBack={() => setSelectedRestaurant(null)} />;
+  if (loading) return <div className="loader">Carregant...</div>;
 
-  if (loading) return <div className="loader">Carregant restaurants...</div>;
+  const filtered = restaurants.filter(r => r.Name?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="restaurant-page">
+    <section>
       <div className="section-header">
         <h2>Mapa i Restaurants</h2>
         <div className="underline"></div>
@@ -38,45 +34,35 @@ const RestaurantList = () => {
 
       <div className="search-container">
         <div className="search-input-wrapper">
-          <input 
-            type="text" 
-            placeholder="Cerca restaurant..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input type="text" placeholder="Cerca restaurant..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           {searchTerm && <button className="clear-search" onClick={() => setSearchTerm("")}>✕</button>}
         </div>
       </div>
 
       <div className="map-wrapper">
-        <MapContainer center={[41.7286, 1.8219]} zoom={13} style={{ height: "400px", width: "100%" }}>
+        <MapContainer center={[41.7286, 1.8219]} zoom={13} style={{ height: "350px", width: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {filteredRestaurants.map(res => (
-            res.Location && (
-              <Marker key={res.id} position={[res.Location.latitude, res.Location.longitude]}>
-                <Popup>{res.Name}</Popup>
-              </Marker>
-            )
+          {filtered.map(res => res.Location && (
+            <Marker key={res.id} position={[res.Location.latitude, res.Location.longitude]}><Popup>{res.Name}</Popup></Marker>
           ))}
         </MapContainer>
       </div>
 
-      {/* QUADRÍCULA DE RESTAURANTS */}
-      <div className="student-grid"> {/* Fem servir la mateixa classe de la quadrícula */}
-        {filteredRestaurants.map(res => (
-          <div key={res.id} className="student-card">
-            <div className="image-container" style={{height: '150px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-               <span style={{fontSize: '3rem'}}>🍴</span>
+      <div className="data-grid">
+        {filtered.map(res => (
+          <div key={res.id} className="card">
+            <div className="card-img-container">
+              <img src={res.PhotoURL || 'https://via.placeholder.com/300'} className="card-img" alt={res.Name} />
             </div>
-            <div className="student-info">
+            <div className="card-body">
               <h3>{res.Name}</h3>
-              <p>📍 Restaurant Joviat</p>
-              <button className="profile-button">Veure Detalls</button>
+              <p>📍 {res.Address}</p>
             </div>
+            <button className="btn-joviat" onClick={() => setSelectedRestaurant(res)}>Veure Detalls</button>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 

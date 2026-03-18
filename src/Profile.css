@@ -1,0 +1,94 @@
+.profile-container {
+  background: white;
+  padding: 40px;
+  border-top: 8px solid var(--joviat-red);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.profile-header { display: flex; gap: 40px; align-items: center; margin-bottom: 40px; }
+.profile-avatar { width: 200px; height: 200px; object-fit: cover; box-shadow: 10px 10px 0 var(--joviat-gold); }
+
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+
+.history-grid, .worker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.history-card, .worker-card {
+  background: var(--joviat-light);
+  padding: 20px;
+  border-left: 5px solid var(--joviat-gold);
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin-top: 10px;
+}
+.status-tag.active { background: var(--joviat-red); color: white; }
+.status-tag.past { background: #ddd; color: #666; }
+
+@media (max-width: 600px) {
+  .profile-header { flex-direction: column; text-align: center; }
+  .contact-grid { grid-template-columns: 1fr; }
+}
+
+/* DIVISOR ESTIL JOVIAT */
+.joviat-divider {
+  border: 0;
+  border-top: 2px solid var(--joviat-light);
+  margin: 30px 0;
+}
+
+/* HISTORIAL D'ALUMNES */
+.active-job {
+  border-left-color: var(--joviat-red) !important;
+  background: #fff9fa !important;
+}
+
+.past-worker img {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.worker-img {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--joviat-gold);
+}
+
+.worker-details h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--joviat-black);
+}
+
+.worker-role {
+  font-size: 0.85rem;
+  margin: 2px 0;
+}
+
+/* BOTÓ TORNAR */
+.back-button {
+  background: none;
+  border: none;
+  color: var(--joviat-red);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: 0.3s;
+}
+
+.back-button:hover {
+  color: var(--joviat-gold);
+}
