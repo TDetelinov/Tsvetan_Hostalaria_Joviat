@@ -1,6 +1,7 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Tus credenciales de la consola de Firebase
 const firebaseConfig = {
@@ -17,3 +18,6 @@ const app = initializeApp(firebaseConfig);
 
 // 2. Exporta la base de datos
 export const db = getFirestore(app);
+
+// 3. Exporta la autenticación
+export const auth = getAuth(app);
