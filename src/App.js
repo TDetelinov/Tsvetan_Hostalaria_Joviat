@@ -103,7 +103,7 @@ function App() {
         <button
           className="burger-btn"
           type="button"
-          aria-label={menuOpen ? 'Tancar menu' : 'Obrir menu'}
+          aria-label={menuOpen ? 'Tanca el menú' : 'Obre el menú'}
           onClick={() => setMenuOpen((prev) => !prev)}
         >
           <span className={`burger-line top ${menuOpen ? 'open' : ''}`}></span>
@@ -112,7 +112,7 @@ function App() {
         </button>
 
         <button className="logo-container" type="button" onClick={() => openView('home')}>
-          <img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Logo Joviat" className="logo-img" />
+          <img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Logotip de Joviat" className="logo-img" />
           <span className="logo-text">Hostaleria Joviat</span>
         </button>
 
@@ -122,7 +122,7 @@ function App() {
       <button
         type="button"
         className={`sidebar-overlay ${menuOpen ? 'open' : ''}`}
-        aria-label="Tancar menu lateral"
+        aria-label="Tanca el menú lateral"
         onClick={() => setMenuOpen(false)}
       ></button>
 
@@ -135,7 +135,7 @@ function App() {
           <div className="sidebar-divider"></div>
 
           {!user ? (
-            <li className="login-link" onClick={() => openView('login')}>Acces Privat</li>
+            <li className="login-link" onClick={() => openView('login')}>Accés privat</li>
           ) : (
             <>
               <li
@@ -145,14 +145,14 @@ function App() {
                   openView('home');
                 }}
               >
-                Tancar Sessio
+                Tancar sessió
               </li>
 
               {isAdmin && (
                 <div className="admin-menu">
-                  <p className="sidebar-label">Gestio</p>
-                  <li onClick={() => openView('add-student')}><IconPlus /> <span>Nou Alumne</span></li>
-                  <li onClick={() => openView('add-restaurant')}><IconPlus /> <span>Nou Restaurant</span></li>
+                  <p className="sidebar-label">Gestió</p>
+                  <li onClick={() => openView('add-student')}><IconPlus /> <span>Nou alumne</span></li>
+                  <li onClick={() => openView('add-restaurant')}><IconPlus /> <span>Nou restaurant</span></li>
                   <li onClick={() => openView('manage-altas')}><IconPlus /> <span>Altes</span></li>
                 </div>
               )}
@@ -168,7 +168,7 @@ function App() {
             <h1 className="joviat-title">Xarxa Alumni d&apos;Hostaleria</h1>
             <div className="underline"></div>
             <p className="joviat-subtitle">
-              Una plataforma per connectar alumnat, exalumnat i restaurants vinculats al projecte.
+              Una plataforma per connectar alumnat, exalumnat i restaurants vinculats al projecte de l&apos;escola.
             </p>
           </div>
         )}

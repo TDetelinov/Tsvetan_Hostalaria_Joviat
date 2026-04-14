@@ -53,9 +53,9 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
       });
 
       setIsEditing(false);
-      window.alert('Dades del restaurant actualitzades.');
+      window.alert('Les dades del restaurant s’han actualitzat correctament.');
     } catch (error) {
-      window.alert('Error en desar els canvis.');
+      window.alert('Hi ha hagut un error en desar els canvis.');
     }
   };
 
@@ -68,7 +68,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
         {isAdmin && (
           <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleSave() : setIsEditing(true))}>
-            {isEditing ? 'Guardar canvis' : 'Editar restaurant'}
+            {isEditing ? 'Desar canvis' : 'Editar restaurant'}
           </button>
         )}
       </div>
@@ -86,7 +86,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
             <div className="contact-grid">
               <div className="contact-item">
-                <label className="contact-label">Adreca</label>
+                <label className="contact-label">Adreça</label>
                 {isEditing ? (
                   <input value={editData.Address || ''} onChange={(event) => setEditData({ ...editData, Address: event.target.value })} />
                 ) : (
@@ -95,7 +95,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Telefon</label>
+                <label className="contact-label">Telèfon</label>
                 {isEditing ? (
                   <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
                 ) : (
@@ -104,7 +104,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Email</label>
+                <label className="contact-label">Correu electrònic</label>
                 {isEditing ? (
                   <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
                 ) : (
@@ -118,7 +118,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
       {restaurant.Location && !isEditing && (
         <div className="map-section">
-          <h3 className="section-subtitle">Localitzacio</h3>
+          <h3 className="section-subtitle">Localització</h3>
           <div className="map-wrapper">
             <MapContainer center={[restaurant.Location.latitude, restaurant.Location.longitude]} zoom={15} className="map-panel">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -146,7 +146,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
               <img src={worker.alumniData.PhotoURL || 'https://via.placeholder.com/72x72?text=Foto'} alt={worker.alumniData.Name} className="worker-img" />
               <div className="worker-details">
                 <h4>{worker.alumniData.Name}</h4>
-                <p>{worker.rol || 'Carrec no especificat'}</p>
+                <p>{worker.rol || 'Càrrec no especificat'}</p>
                 <span className={`status-tag ${worker.current_job ? 'active' : 'past'}`}>
                   {worker.current_job ? 'Actual' : 'Anterior'}
                 </span>

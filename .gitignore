@@ -41,14 +41,14 @@ packages/react-devtools-inline/dist
 packages/react-devtools-shell/dist
 packages/react-devtools-timeline/dist
 
-# Firebase & Environment Variables
+# Variables d'entorn i claus privades
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Firebase keys (si bajaste algún json de serviceAccount)
+# Fitxers de claus descarregades (Firebase, Google Maps, etc.)
 *.json
 !package.json
 !manifest.json

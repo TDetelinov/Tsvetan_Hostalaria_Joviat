@@ -31,7 +31,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
         setWorkHistory(historyData.filter((item) => item.restaurantData));
       } catch (error) {
-        console.error('Error carregant historial:', error);
+        console.error('Error en carregar l’historial:', error);
       } finally {
         setLoading(false);
       }
@@ -54,7 +54,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
       setIsEditing(false);
       window.alert('Perfil actualitzat correctament.');
     } catch (error) {
-      window.alert('Error en actualitzar el perfil.');
+      window.alert('Hi ha hagut un error en actualitzar el perfil.');
     }
   };
 
@@ -100,7 +100,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
             <div className="contact-grid">
               <div className="contact-item">
-                <label className="contact-label">Email</label>
+                <label className="contact-label">Correu electrònic</label>
                 {isEditing ? (
                   <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
                 ) : (
@@ -109,7 +109,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Telefon</label>
+                <label className="contact-label">Telèfon</label>
                 {isEditing ? (
                   <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
                 ) : (
@@ -138,9 +138,9 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
         </div>
       </div>
 
-      <h3 className="section-subtitle">Trajectoria a restaurants</h3>
+      <h3 className="section-subtitle">Trajectòria als restaurants</h3>
       {loading ? (
-        <p className="loader-inline">Carregant trajectoria...</p>
+        <p className="loader-inline">Carregant trajectòria...</p>
       ) : (
         <div className="history-grid">
           {workHistory.map((work) => (
@@ -151,8 +151,8 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
               onClick={() => onNavigateRest({ id: work.id_restaurant, ...work.restaurantData })}
             >
               <h4>{work.restaurantData.Name}</h4>
-              <p className="role-text">{work.rol || 'Carrec no especificat'}</p>
-              <div className="job-status">{work.current_job ? 'Actualment' : 'Anteriorment'}</div>
+              <p className="role-text">{work.rol || 'Càrrec no especificat'}</p>
+              <div className="job-status">{work.current_job ? 'Feina actual' : 'Feina anterior'}</div>
             </button>
           ))}
 

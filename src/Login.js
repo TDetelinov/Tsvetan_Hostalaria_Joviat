@@ -22,15 +22,15 @@ const Login = ({ onLoginSuccess, onGoToRegister }) => {
         await signOut(auth);
         setError(
           accessState.status === 'pendent'
-            ? 'La teva sollicitud encara esta pendent d aprovacio.'
-            : 'Aquest compte encara no te permis per entrar.'
+            ? 'La teva sol·licitud encara està pendent d’aprovació.'
+            : 'Aquest compte encara no té permís per accedir-hi.'
         );
         return;
       }
 
       onLoginSuccess();
     } catch (err) {
-      setError('Correu o contrasenya incorrectes.');
+      setError('El correu o la contrasenya no són correctes.');
     } finally {
       setLoading(false);
     }
@@ -41,13 +41,13 @@ const Login = ({ onLoginSuccess, onGoToRegister }) => {
       <div className="login-card">
         <div className="section-header">
           <p className="section-kicker">Zona privada</p>
-          <h2>Acces Privat</h2>
+          <h2>Accés privat</h2>
           <div className="underline"></div>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
-            <label>Correu electronic</label>
+            <label>Correu electrònic</label>
             <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
 
@@ -65,7 +65,7 @@ const Login = ({ onLoginSuccess, onGoToRegister }) => {
           <div className="register-prompt">
             <p>No tens compte?</p>
             <button type="button" onClick={onGoToRegister} className="btn-link">
-              Sollicitar alta d usuari
+              Sol·licitar alta d’usuari
             </button>
           </div>
         </form>

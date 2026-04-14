@@ -43,7 +43,7 @@ const StudentList = ({ onSelect }) => {
           />
           {searchTerm && (
             <button className="clear-search" type="button" onClick={() => setSearchTerm('')}>
-              x
+              ×
             </button>
           )}
         </div>
@@ -66,7 +66,7 @@ const StudentList = ({ onSelect }) => {
         ))}
       </div>
 
-      {filteredAlumni.length === 0 && <p className="no-data">No s han trobat alumnes amb aquest nom.</p>}
+      {filteredAlumni.length === 0 && <p className="no-data">No s&apos;han trobat alumnes amb aquest nom.</p>}
     </section>
   );
 };

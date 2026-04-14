@@ -14,7 +14,7 @@ const ManageAltas = ({ onBack }) => {
       const snapshot = await getDocs(pendingQuery);
       setPendingUsers(snapshot.docs.map((document) => ({ id: document.id, ...document.data() })));
     } catch (error) {
-      console.error('Error carregant altes pendents:', error);
+      console.error('Error en carregar les altes pendents:', error);
     } finally {
       setLoading(false);
     }
@@ -29,12 +29,12 @@ const ManageAltas = ({ onBack }) => {
       await updateDoc(doc(db, 'Users', id), { status: 'aprovat' });
       fetchPending();
     } catch (error) {
-      window.alert('No s ha pogut aprovar la sollicitud.');
+      window.alert('No s’ha pogut aprovar la sol·licitud.');
     }
   };
 
   const handleReject = async (id) => {
-    if (!window.confirm('Segur que vols rebutjar aquesta sollicitud?')) {
+    if (!window.confirm('Segur que vols rebutjar aquesta sol·licitud?')) {
       return;
     }
 
@@ -42,30 +42,30 @@ const ManageAltas = ({ onBack }) => {
       await deleteDoc(doc(db, 'Users', id));
       fetchPending();
     } catch (error) {
-      window.alert('No s ha pogut rebutjar la sollicitud.');
+      window.alert('No s’ha pogut rebutjar la sol·licitud.');
     }
   };
 
   return (
     <section className="admin-section-wrapper">
-      <p className="admin-label-top">Administracio</p>
-      <h1 className="admin-main-title">Gestio d altes pendents</h1>
+      <p className="admin-label-top">Administració</p>
+      <h1 className="admin-main-title">Gestió d’altes pendents</h1>
       <p className="admin-description">
         Revisa les peticions de nous usuaris i decideix quins comptes poden accedir a la zona privada.
       </p>
 
       <div className="admin-card">
         {loading ? (
-          <p className="loader-inline">Carregant sollicituds...</p>
+          <p className="loader-inline">Carregant sol·licituds...</p>
         ) : pendingUsers.length === 0 ? (
-          <p className="no-data">No hi ha sollicituds pendents.</p>
+          <p className="no-data">No hi ha sol·licituds pendents.</p>
         ) : (
           <div className="table-wrapper">
             <table className="requests-table">
               <thead>
                 <tr>
                   <th>Usuari</th>
-                  <th>Email</th>
+                  <th>Correu</th>
                   <th>Estat</th>
                   <th className="actions-column">Accions</th>
                 </tr>
@@ -96,7 +96,7 @@ const ManageAltas = ({ onBack }) => {
 
       <div className="form-submit-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
-          Tornar a l inici
+          Tornar a l&apos;inici
         </button>
       </div>
     </section>

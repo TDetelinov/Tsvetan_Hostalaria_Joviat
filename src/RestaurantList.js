@@ -30,7 +30,7 @@ const RestaurantList = ({ onSelect }) => {
   return (
     <section className="content-section">
       <div className="section-header">
-        <p className="section-kicker">Mapa de col laboradors</p>
+        <p className="section-kicker">Mapa de col·laboradors</p>
         <h2>Restaurants vinculats</h2>
         <div className="underline"></div>
       </div>
@@ -39,13 +39,13 @@ const RestaurantList = ({ onSelect }) => {
         <div className="search-input-wrapper">
           <input
             type="text"
-            placeholder="Cerca restaurant..."
+            placeholder="Cerca un restaurant..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
           {searchTerm && (
             <button className="clear-search" type="button" onClick={() => setSearchTerm('')}>
-              x
+              ×
             </button>
           )}
         </div>
@@ -80,7 +80,7 @@ const RestaurantList = ({ onSelect }) => {
             </div>
             <div className="card-body">
               <h3>{restaurant.Name}</h3>
-              <p>{restaurant.Address || 'Sense adreca'}</p>
+              <p>{restaurant.Address || 'Sense adreça'}</p>
             </div>
             <button className="btn-joviat card-action" type="button" onClick={() => onSelect(restaurant)}>
               Veure detalls
@@ -89,7 +89,7 @@ const RestaurantList = ({ onSelect }) => {
         ))}
       </div>
 
-      {filteredRestaurants.length === 0 && <p className="no-data">No s han trobat restaurants amb aquest nom.</p>}
+      {filteredRestaurants.length === 0 && <p className="no-data">No s&apos;han trobat restaurants amb aquest nom.</p>}
     </section>
   );
 };

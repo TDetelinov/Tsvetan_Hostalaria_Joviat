@@ -33,7 +33,7 @@ const Register = ({ onBack, onRequestSubmitted }) => {
       });
 
       await signOut(auth);
-      window.alert('Sollicitud enviada. Quan un administrador la revisi ja podras iniciar sessio.');
+      window.alert('Sol·licitud enviada. Quan l’administració la revisi ja podràs iniciar sessió.');
       onRequestSubmitted();
     } catch (submissionError) {
       setError(`Error en el registre: ${submissionError.message}`);
@@ -46,12 +46,12 @@ const Register = ({ onBack, onRequestSubmitted }) => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="section-header">
-          <p className="section-kicker">Nova sollicitud</p>
-          <h2>Demanar Alta</h2>
+          <p className="section-kicker">Nova sol·licitud</p>
+          <h2>Demanar alta</h2>
           <div className="underline"></div>
         </div>
 
-        <p className="form-note">Omple les dades i l equip administrador revisara la peticio abans de donar acces.</p>
+        <p className="form-note">Omple les dades i l’equip administrador revisarà la petició abans de donar-te accés.</p>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
@@ -60,7 +60,7 @@ const Register = ({ onBack, onRequestSubmitted }) => {
           </div>
 
           <div className="input-group">
-            <label>Email</label>
+            <label>Correu electrònic</label>
             <input type="email" value={formData.email} onChange={(event) => handleChange('email', event.target.value)} required />
           </div>
 
@@ -72,7 +72,7 @@ const Register = ({ onBack, onRequestSubmitted }) => {
           {error && <p className="error-message">{error}</p>}
 
           <button type="submit" className="btn-joviat full-button" disabled={loading}>
-            {loading ? 'Enviant...' : 'Sollicitar Acces'}
+            {loading ? 'Enviant...' : 'Sol·licitar accés'}
           </button>
           <button type="button" className="btn-secondary full-button" onClick={onBack}>
             Tornar al login
