@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { db } from './firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { addDoc, collection } from 'firebase/firestore';
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Corregim la icona per defecte de Leaflet
 const icon = L.icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -19,101 +18,114 @@ const AddRestaurant = ({ onBack }) => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [photoURL, setPhotoURL] = useState('');
-  const [location, setLocation] = useState({ lat: 41.728, lng: 1.823 }); // Manresa per defecte
+  const [location, setLocation] = useState({ lat: 41.728, lng: 1.823 });
   const [loading, setLoading] = useState(false);
 
-  // Component per detectar el clic al mapa i moure el marcador
   const LocationMarker = () => {
     useMapEvents({
-      click(e) {
-        setLocation({ lat: e.latlng.lat, lng: e.latlng.lng });
-      },
+      click(event) {
+        setLocation({ lat: event.latlng.lat, lng: event.latlng.lng });
+      }
     });
+
     return <Marker position={[location.lat, location.lng]} icon={icon} />;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!name) return alert("El nom és obligatori");
-    
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!name.trim()) {
+      window.alert('El nom del restaurant es obligatori.');
+      return;
+    }
+
     setLoading(true);
+
     try {
-      await addDoc(collection(db, "Restaurant"), {
-        Name: name,
-        Address: address,
-        Phone: phone,
-        Email: email,
-        PhotoURL: photoURL || 'https://via.placeholder.com/400x300?text=Sense+Foto',
+      await addDoc(collection(db, 'Restaurant'), {
+        Name: name.trim(),
+        Address: address.trim(),
+        Phone: phone.trim(),
+        Email: email.trim(),
+        PhotoURL: photoURL.trim() || 'https://via.placeholder.com/400x300?text=Sense+Foto',
         Location: { latitude: location.lat, longitude: location.lng }
       });
-      alert("Restaurant creat correctament!");
+
+      window.alert('Restaurant creat correctament.');
       onBack();
     } catch (error) {
       console.error(error);
-      alert("Error en crear el restaurant");
+      window.alert('Error en crear el restaurant.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="admin-form-container">
-      <div className="section-header">
-        <h2>Alta de Nou Restaurant</h2>
-        <div className="underline"></div>
-      </div>
+    <form onSubmit={handleSubmit} className="admin-section-wrapper">
+      <p className="admin-label-top">Administracio</p>
+      <h1 className="admin-main-title">Alta de nou restaurant</h1>
+      <p className="admin-description">
+        Afegeix les dades principals del restaurant i situa l establiment al mapa per mostrar-lo correctament al directori.
+      </p>
 
-      <form onSubmit={handleSubmit} className="minimal-form">
+      <div className="admin-card">
         <div className="form-grid">
           <div className="input-group full-width">
-            <label>Nom del Restaurant</label>
-            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex. Can Jubany" required />
-          </div>
-          
-          <div className="input-group">
-            <label>Adreça</label>
-            <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="Carrer, Ciutat" />
+            <label>Nom del restaurant</label>
+            <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Can Jubany" required />
           </div>
 
           <div className="input-group">
-            <label>URL Foto (Opcional)</label>
-            <input type="url" value={photoURL} onChange={e => setPhotoURL(e.target.value)} placeholder="https://..." />
+            <label>Adreca</label>
+            <input type="text" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Carrer, ciutat" />
           </div>
 
           <div className="input-group">
-            <label>Telèfon</label>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+            <label>URL de la foto</label>
+            <input type="url" value={photoURL} onChange={(event) => setPhotoURL(event.target.value)} placeholder="https://..." />
+          </div>
+
+          <div className="input-group">
+            <label>Telefon</label>
+            <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
           </div>
 
           <div className="input-group">
             <label>Email de contacte</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
         </div>
+      </div>
 
-        <div style={{ marginTop: '30px' }}>
-          <label style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--joviat-gold)', textTransform: 'uppercase' }}>
-            Ubica'l al mapa (Clica per moure el marcador)
-          </label>
-          <div style={{ height: '300px', width: '100%', marginTop: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #ddd' }}>
-            <MapContainer center={[41.728, 1.823]} zoom={13} style={{ height: '100%', width: '100%' }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <LocationMarker />
-            </MapContainer>
+      <div className="admin-card trajectoria-card">
+        <div className="trajectoria-header">
+          <div>
+            <p className="admin-label-top">Localitzacio</p>
+            <h3 className="admin-card-title">Ubicacio al mapa</h3>
           </div>
-          <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '5px' }}>
-            Coordenades: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+          <p className="map-coordinates">
+            {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
           </p>
         </div>
 
-        <div className="form-actions">
-          <button type="button" className="profile-button" style={{ background: '#666', marginRight: '10px', width: 'auto' }} onClick={onBack}>Cancel·lar</button>
-          <button type="submit" className="btn-joviat" style={{ width: 'auto', padding: '12px 30px' }} disabled={loading}>
-            {loading ? 'Guardant...' : 'Desar Restaurant'}
-          </button>
+        <div className="map-wrapper map-wrapper-admin">
+          <MapContainer center={[41.728, 1.823]} zoom={13} className="map-panel">
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <LocationMarker />
+          </MapContainer>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div className="form-submit-actions">
+        <button type="button" className="btn-secondary" onClick={onBack}>
+          Cancel lar
+        </button>
+        <button type="submit" className="btn-joviat" disabled={loading}>
+          {loading ? 'Guardant...' : 'Desar restaurant'}
+        </button>
+      </div>
+    </form>
   );
 };
 

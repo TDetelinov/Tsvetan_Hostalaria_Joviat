@@ -1,67 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import RestaurantProfile from './RestaurantProfile';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const RestaurantList = () => {
+const RestaurantList = ({ onSelect }) => {
   const [restaurants, setRestaurants] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      const querySnapshot = await getDocs(collection(db, "Restaurant"));
-      setRestaurants(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const querySnapshot = await getDocs(collection(db, 'Restaurant'));
+      setRestaurants(querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     };
+
     fetchRestaurants();
   }, []);
 
-  if (selectedRestaurant) return <RestaurantProfile restaurant={selectedRestaurant} onBack={() => setSelectedRestaurant(null)} />;
-  if (loading) return <div className="loader">Carregant...</div>;
+  if (loading) {
+    return <div className="loader">Carregant restaurants...</div>;
+  }
 
-  const filtered = restaurants.filter(r => r.Name?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredRestaurants = restaurants.filter((restaurant) =>
+    restaurant.Name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <section>
+    <section className="content-section">
       <div className="section-header">
-        <h2>Mapa i Restaurants</h2>
+        <p className="section-kicker">Mapa de col laboradors</p>
+        <h2>Restaurants vinculats</h2>
         <div className="underline"></div>
       </div>
 
       <div className="search-container">
         <div className="search-input-wrapper">
-          <input type="text" placeholder="Cerca restaurant..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          {searchTerm && <button className="clear-search" onClick={() => setSearchTerm("")}>✕</button>}
+          <input
+            type="text"
+            placeholder="Cerca restaurant..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+          {searchTerm && (
+            <button className="clear-search" type="button" onClick={() => setSearchTerm('')}>
+              x
+            </button>
+          )}
         </div>
       </div>
 
       <div className="map-wrapper">
-        <MapContainer center={[41.7286, 1.8219]} zoom={13} style={{ height: "350px", width: "100%" }}>
+        <MapContainer center={[41.7286, 1.8219]} zoom={13} className="map-panel">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {filtered.map(res => res.Location && (
-            <Marker key={res.id} position={[res.Location.latitude, res.Location.longitude]}><Popup>{res.Name}</Popup></Marker>
-          ))}
+          {filteredRestaurants.map(
+            (restaurant) =>
+              restaurant.Location && (
+                <Marker
+                  key={restaurant.id}
+                  position={[restaurant.Location.latitude, restaurant.Location.longitude]}
+                >
+                  <Popup>{restaurant.Name}</Popup>
+                </Marker>
+              )
+          )}
         </MapContainer>
       </div>
 
       <div className="data-grid">
-        {filtered.map(res => (
-          <div key={res.id} className="card">
+        {filteredRestaurants.map((restaurant) => (
+          <article key={restaurant.id} className="card">
             <div className="card-img-container">
-              <img src={res.PhotoURL || 'https://via.placeholder.com/300'} className="card-img" alt={res.Name} />
+              <img
+                src={restaurant.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'}
+                className="card-img"
+                alt={restaurant.Name}
+              />
             </div>
             <div className="card-body">
-              <h3>{res.Name}</h3>
-              <p>📍 {res.Address}</p>
+              <h3>{restaurant.Name}</h3>
+              <p>{restaurant.Address || 'Sense adreca'}</p>
             </div>
-            <button className="btn-joviat" onClick={() => setSelectedRestaurant(res)}>Veure Detalls</button>
-          </div>
+            <button className="btn-joviat card-action" type="button" onClick={() => onSelect(restaurant)}>
+              Veure detalls
+            </button>
+          </article>
         ))}
       </div>
+
+      {filteredRestaurants.length === 0 && <p className="no-data">No s han trobat restaurants amb aquest nom.</p>}
     </section>
   );
 };

@@ -1,28 +1,42 @@
 import React, { useState } from 'react';
 import { auth, db } from './firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { collection, addDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { addDoc, collection } from 'firebase/firestore';
 
-const Register = ({ onBack }) => {
+const Register = ({ onBack, onRequestSubmitted }) => {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleChange = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
+    setError('');
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await addDoc(collection(db, "Users"), {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email.trim(),
+        formData.password
+      );
+
+      await addDoc(collection(db, 'Users'), {
         uid: userCredential.user.uid,
-        name: formData.name,
-        email: formData.email,
-        status: 'pendent', // Així ManageAltas el trobarà
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        status: 'pendent',
         date: new Date()
       });
-      alert("Sol·licitud enviada! Un administrador l'haurà d'aprovar.");
-      onBack();
-    } catch (error) {
-      alert("Error en el registre: " + error.message);
+
+      await signOut(auth);
+      window.alert('Sollicitud enviada. Quan un administrador la revisi ja podras iniciar sessio.');
+      onRequestSubmitted();
+    } catch (submissionError) {
+      setError(`Error en el registre: ${submissionError.message}`);
     } finally {
       setLoading(false);
     }
@@ -31,25 +45,38 @@ const Register = ({ onBack }) => {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <h2 className="joviat-title">Demanar Alta</h2>
-        <p style={{textAlign: 'center', marginBottom: '20px', color: '#666'}}>Registra't per formar part de la xarxa Alumni.</p>
+        <div className="section-header">
+          <p className="section-kicker">Nova sollicitud</p>
+          <h2>Demanar Alta</h2>
+          <div className="underline"></div>
+        </div>
+
+        <p className="form-note">Omple les dades i l equip administrador revisara la peticio abans de donar acces.</p>
+
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <label>Nom Complet</label>
-            <input type="text" required onChange={e => setFormData({...formData, name: e.target.value})} />
+            <label>Nom complet</label>
+            <input type="text" value={formData.name} onChange={(event) => handleChange('name', event.target.value)} required />
           </div>
+
           <div className="input-group">
             <label>Email</label>
-            <input type="email" required onChange={e => setFormData({...formData, email: e.target.value})} />
+            <input type="email" value={formData.email} onChange={(event) => handleChange('email', event.target.value)} required />
           </div>
+
           <div className="input-group">
             <label>Contrasenya</label>
-            <input type="password" required onChange={e => setFormData({...formData, password: e.target.value})} />
+            <input type="password" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} required minLength={6} />
           </div>
-          <button type="submit" className="btn-joviat" disabled={loading}>
-            {loading ? 'Enviant...' : 'Sol·licitar Accés'}
+
+          {error && <p className="error-message">{error}</p>}
+
+          <button type="submit" className="btn-joviat full-button" disabled={loading}>
+            {loading ? 'Enviant...' : 'Sollicitar Acces'}
           </button>
-          <button type="button" className="btn-secondary" onClick={onBack} style={{marginTop: '10px', width: '100%'}}>Tornar al Login</button>
+          <button type="button" className="btn-secondary full-button" onClick={onBack}>
+            Tornar al login
+          </button>
         </form>
       </div>
     </div>
