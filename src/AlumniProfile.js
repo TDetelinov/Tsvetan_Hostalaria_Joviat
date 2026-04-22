@@ -1,12 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where
+} from 'firebase/firestore';
 
 const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
   const [workHistory, setWorkHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...alumni });
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setEditData({ ...alumni });
+  }, [alumni]);
 
   useEffect(() => {
     const fetchWorkHistory = async () => {
@@ -31,7 +45,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
         setWorkHistory(historyData.filter((item) => item.restaurantData));
       } catch (error) {
-        console.error('Error en carregar l’historial:', error);
+        console.error("Error en carregar l'historial:", error);
       } finally {
         setLoading(false);
       }
@@ -54,7 +68,35 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
       setIsEditing(false);
       window.alert('Perfil actualitzat correctament.');
     } catch (error) {
-      window.alert('Hi ha hagut un error en actualitzar el perfil.');
+      window.alert("Hi ha hagut un error en actualitzar el perfil.");
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      "Segur que vols eliminar aquest alumne? També s'esborraran les vinculacions amb restaurants."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      const relationQuery = query(collection(db, 'Rest_Alum'), where('id_alumni', '==', alumni.id));
+      const relationSnapshot = await getDocs(relationQuery);
+
+      await Promise.all(relationSnapshot.docs.map((relationDoc) => deleteDoc(doc(db, 'Rest_Alum', relationDoc.id))));
+      await deleteDoc(doc(db, 'Alumni', alumni.id));
+
+      window.alert("L'alumne s'ha eliminat correctament.");
+      onBack();
+    } catch (error) {
+      console.error(error);
+      window.alert("No s'ha pogut eliminar l'alumne.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -66,9 +108,22 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
         </button>
 
         {isAdmin && (
-          <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleUpdate() : setIsEditing(true))}>
-            {isEditing ? 'Desar canvis' : 'Editar fitxa'}
-          </button>
+          <div className="profile-actions">
+            {isEditing && (
+              <button
+                className="btn-danger"
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Eliminant...' : 'Eliminar alumne'}
+              </button>
+            )}
+
+            <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleUpdate() : setIsEditing(true))}>
+              {isEditing ? 'Desar canvis' : 'Editar fitxa'}
+            </button>
+          </div>
         )}
       </div>
 

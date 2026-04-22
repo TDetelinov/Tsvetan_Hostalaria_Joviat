@@ -1,14 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
-import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  updateDoc,
+  where
+} from 'firebase/firestore';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+const markerIcon = L.icon({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
 
 const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) => {
   const [alumniWorkers, setAlumniWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...restaurant });
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setEditData({ ...restaurant });
+  }, [restaurant]);
 
   useEffect(() => {
     const fetchWorkers = async () => {
@@ -53,9 +75,37 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
       });
 
       setIsEditing(false);
-      window.alert('Les dades del restaurant s’han actualitzat correctament.');
+      window.alert("Les dades del restaurant s'han actualitzat correctament.");
     } catch (error) {
-      window.alert('Hi ha hagut un error en desar els canvis.');
+      window.alert("Hi ha hagut un error en desar els canvis.");
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      "Segur que vols eliminar aquest restaurant? També s'esborraran les vinculacions amb alumnat."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      const relationQuery = query(collection(db, 'Rest_Alum'), where('id_restaurant', '==', restaurant.id));
+      const relationSnapshot = await getDocs(relationQuery);
+
+      await Promise.all(relationSnapshot.docs.map((relationDoc) => deleteDoc(doc(db, 'Rest_Alum', relationDoc.id))));
+      await deleteDoc(doc(db, 'Restaurant', restaurant.id));
+
+      window.alert("El restaurant s'ha eliminat correctament.");
+      onBack();
+    } catch (error) {
+      console.error(error);
+      window.alert("No s'ha pogut eliminar el restaurant.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -67,9 +117,22 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
         </button>
 
         {isAdmin && (
-          <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleSave() : setIsEditing(true))}>
-            {isEditing ? 'Desar canvis' : 'Editar restaurant'}
-          </button>
+          <div className="profile-actions">
+            {isEditing && (
+              <button
+                className="btn-danger"
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Eliminant...' : 'Eliminar restaurant'}
+              </button>
+            )}
+
+            <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleSave() : setIsEditing(true))}>
+              {isEditing ? 'Desar canvis' : 'Editar restaurant'}
+            </button>
+          </div>
         )}
       </div>
 
@@ -122,7 +185,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
           <div className="map-wrapper">
             <MapContainer center={[restaurant.Location.latitude, restaurant.Location.longitude]} zoom={15} className="map-panel">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[restaurant.Location.latitude, restaurant.Location.longitude]}>
+              <Marker position={[restaurant.Location.latitude, restaurant.Location.longitude]} icon={markerIcon}>
                 <Popup>{restaurant.Name}</Popup>
               </Marker>
             </MapContainer>

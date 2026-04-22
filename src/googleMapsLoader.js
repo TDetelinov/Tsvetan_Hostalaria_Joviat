@@ -2,7 +2,7 @@ let googleMapsPromise = null;
 
 export const loadGoogleMapsPlaces = (apiKey) => {
   if (!apiKey) {
-    return Promise.reject(new Error('No s’ha definit cap clau de Google Maps.'));
+    return Promise.reject(new Error("No s'ha definit cap clau de Google Maps."));
   }
 
   if (window.google?.maps?.places) {
@@ -18,7 +18,7 @@ export const loadGoogleMapsPlaces = (apiKey) => {
 
     if (existingScript) {
       existingScript.addEventListener('load', () => resolve(window.google));
-      existingScript.addEventListener('error', () => reject(new Error('No s’ha pogut carregar Google Maps.')));
+      existingScript.addEventListener('error', () => reject(new Error("No s'ha pogut carregar Google Maps.")));
       return;
     }
 
@@ -28,7 +28,7 @@ export const loadGoogleMapsPlaces = (apiKey) => {
     script.defer = true;
     script.dataset.googleMapsLoader = 'true';
     script.onload = () => resolve(window.google);
-    script.onerror = () => reject(new Error('No s’ha pogut carregar Google Maps.'));
+    script.onerror = () => reject(new Error("No s'ha pogut carregar Google Maps."));
     document.head.appendChild(script);
   });
 

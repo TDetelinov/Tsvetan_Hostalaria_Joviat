@@ -354,6 +354,21 @@ a {
   margin: 28px 0 32px;
 }
 
+.results-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.results-counter {
+  margin: 0;
+  color: var(--joviat-grey);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
 .search-input-wrapper {
   position: relative;
 }
@@ -407,6 +422,121 @@ a {
 
 .map-wrapper-admin .map-panel {
   height: 320px;
+}
+
+.cluster-marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.cluster-marker {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--joviat-red), #b12c54);
+  color: var(--white);
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 22px rgba(138, 21, 56, 0.28);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.map-popup-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 250px;
+}
+
+.map-popup-group-header {
+  color: var(--joviat-black);
+  font-size: 0.9rem;
+}
+
+.map-popup-card {
+  overflow: hidden;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.map-popup-image {
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+  display: block;
+}
+
+.map-popup-body {
+  padding: 12px;
+}
+
+.map-popup-body h4 {
+  margin: 0 0 6px;
+  color: var(--joviat-black);
+  font-size: 1rem;
+}
+
+.map-popup-body p {
+  margin: 0;
+  color: var(--joviat-grey);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.popup-workers-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.popup-workers-count {
+  color: var(--joviat-black);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.popup-workers-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.popup-worker-avatar,
+.popup-worker-extra {
+  width: 34px;
+  height: 34px;
+  margin-left: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  box-shadow: 0 4px 10px rgba(17, 17, 17, 0.08);
+}
+
+.popup-workers-avatars > :first-child {
+  margin-left: 0;
+}
+
+.popup-worker-avatar {
+  object-fit: cover;
+  background: #efe6da;
+}
+
+.popup-worker-extra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 17, 17, 0.1);
+  color: var(--joviat-black);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.popup-detail-button {
+  margin-top: 14px;
+  width: 100%;
 }
 
 .map-section {
@@ -496,6 +626,7 @@ a {
 .profile-button,
 .btn-secondary,
 .btn-link,
+.btn-danger,
 .btn-approve,
 .btn-reject {
   border: 0;
@@ -541,6 +672,19 @@ a {
   color: var(--joviat-red);
   font-weight: 700;
   text-decoration: underline;
+}
+
+.btn-danger {
+  border-radius: 999px;
+  padding: 14px 22px;
+  background: #b8393f;
+  color: var(--white);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.btn-danger:hover {
+  background: #9f2d33;
 }
 
 .btn-joviat:disabled,
@@ -724,6 +868,23 @@ a {
   line-height: 1.6;
 }
 
+.restaurant-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.places-search-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(245, 239, 230, 0.72);
+  border: 1px solid rgba(197, 160, 89, 0.35);
+}
+
+.places-search-label {
+  color: var(--joviat-red);
+}
+
 .experience-list {
   display: flex;
   flex-direction: column;
@@ -757,6 +918,12 @@ a {
   margin-bottom: 0;
 }
 
+.restaurant-map-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .restaurant-vincle-card {
   padding: 18px;
   border-radius: 18px;
@@ -778,6 +945,43 @@ a {
   flex-wrap: wrap;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination-button,
+.pagination-page {
+  min-width: 42px;
+  padding: 10px 14px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--joviat-black);
+  font-weight: 700;
+}
+
+.pagination-page.active {
+  background: linear-gradient(135deg, var(--joviat-red), #b12c54);
+  color: var(--white);
+  border-color: transparent;
+}
+
+.pagination-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .profile-container {
   display: flex;
   flex-direction: column;
@@ -789,6 +993,12 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 14px;
+  flex-wrap: wrap;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
   flex-wrap: wrap;
 }
 

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import PaginationControls from './PaginationControls';
+
+const PAGE_SIZE = 10;
 
 const StudentList = ({ onSelect }) => {
   const [alumni, setAlumni] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchAlumni = async () => {
@@ -17,6 +21,10 @@ const StudentList = ({ onSelect }) => {
     fetchAlumni();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   if (loading) {
     return <div className="loader">Carregant alumnes...</div>;
   }
@@ -24,6 +32,10 @@ const StudentList = ({ onSelect }) => {
   const filteredAlumni = alumni.filter((person) =>
     person.Name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const totalItems = filteredAlumni.length;
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedAlumni = filteredAlumni.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <section className="content-section">
@@ -49,8 +61,14 @@ const StudentList = ({ onSelect }) => {
         </div>
       </div>
 
+      <div className="results-toolbar">
+        <p className="results-counter">
+          {totalItems} {totalItems === 1 ? 'alumne trobat' : 'alumnes trobats'}
+        </p>
+      </div>
+
       <div className="data-grid">
-        {filteredAlumni.map((person) => (
+        {paginatedAlumni.map((person) => (
           <article key={person.id} className="card">
             <div className="card-img-container">
               <img src={person.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'} className="card-img" alt={person.Name} />
@@ -67,6 +85,13 @@ const StudentList = ({ onSelect }) => {
       </div>
 
       {filteredAlumni.length === 0 && <p className="no-data">No s&apos;han trobat alumnes amb aquest nom.</p>}
+
+      <PaginationControls
+        currentPage={currentPage}
+        pageSize={PAGE_SIZE}
+        totalItems={totalItems}
+        onPageChange={setCurrentPage}
+      />
     </section>
   );
 };
