@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
 import {
   collection,
   deleteDoc,
@@ -12,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
+import { db } from './firebase';
+import { useI18n } from './i18n';
 import 'leaflet/dist/leaflet.css';
 
 const markerIcon = L.icon({
@@ -22,6 +23,7 @@ const markerIcon = L.icon({
 });
 
 const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) => {
+  const { t } = useI18n();
   const [alumniWorkers, setAlumniWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -66,8 +68,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
   const handleSave = async () => {
     try {
-      const restaurantRef = doc(db, 'Restaurant', restaurant.id);
-      await updateDoc(restaurantRef, {
+      await updateDoc(doc(db, 'Restaurant', restaurant.id), {
         Name: editData.Name,
         Address: editData.Address,
         Phone: editData.Phone,
@@ -75,16 +76,14 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
       });
 
       setIsEditing(false);
-      window.alert("Les dades del restaurant s'han actualitzat correctament.");
+      window.alert(t('profileSaved'));
     } catch (error) {
-      window.alert("Hi ha hagut un error en desar els canvis.");
+      window.alert(t('profileSaveError'));
     }
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      "Segur que vols eliminar aquest restaurant? També s'esborraran les vinculacions amb alumnat."
-    );
+    const confirmed = window.confirm(t('deleteRestaurantConfirm'));
 
     if (!confirmed) {
       return;
@@ -99,11 +98,11 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
       await Promise.all(relationSnapshot.docs.map((relationDoc) => deleteDoc(doc(db, 'Rest_Alum', relationDoc.id))));
       await deleteDoc(doc(db, 'Restaurant', restaurant.id));
 
-      window.alert("El restaurant s'ha eliminat correctament.");
+      window.alert(t('deleteRestaurantSuccess'));
       onBack();
     } catch (error) {
       console.error(error);
-      window.alert("No s'ha pogut eliminar el restaurant.");
+      window.alert(t('deleteRestaurantError'));
     } finally {
       setDeleting(false);
     }
@@ -113,24 +112,19 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
     <div className="profile-container">
       <div className="profile-nav-header">
         <button className="back-button" type="button" onClick={onBack}>
-          Tornar al mapa
+          {t('profileBackMap')}
         </button>
 
         {isAdmin && (
           <div className="profile-actions">
             {isEditing && (
-              <button
-                className="btn-danger"
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? 'Eliminant...' : 'Eliminar restaurant'}
+              <button className="btn-danger" type="button" onClick={handleDelete} disabled={deleting}>
+                {deleting ? t('deleting') : t('deleteRestaurant')}
               </button>
             )}
 
             <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleSave() : setIsEditing(true))}>
-              {isEditing ? 'Desar canvis' : 'Editar restaurant'}
+              {isEditing ? t('saveChanges') : t('editRestaurant')}
             </button>
           </div>
         )}
@@ -149,29 +143,29 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
             <div className="contact-grid">
               <div className="contact-item">
-                <label className="contact-label">Adreça</label>
+                <label className="contact-label">{t('addressLabel')}</label>
                 {isEditing ? (
                   <input value={editData.Address || ''} onChange={(event) => setEditData({ ...editData, Address: event.target.value })} />
                 ) : (
-                  <p className="contact-value">{editData.Address || 'No indicada'}</p>
+                  <p className="contact-value">{editData.Address || t('notSpecifiedF')}</p>
                 )}
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Telèfon</label>
+                <label className="contact-label">{t('phoneLabel')}</label>
                 {isEditing ? (
                   <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
                 ) : (
-                  <p className="contact-value">{editData.Phone || 'No indicat'}</p>
+                  <p className="contact-value">{editData.Phone || t('notSpecified')}</p>
                 )}
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Correu electrònic</label>
+                <label className="contact-label">{t('emailLabel')}</label>
                 {isEditing ? (
                   <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
                 ) : (
-                  <p className="contact-value">{editData.Email || 'No indicat'}</p>
+                  <p className="contact-value">{editData.Email || t('notSpecified')}</p>
                 )}
               </div>
             </div>
@@ -181,7 +175,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
 
       {restaurant.Location && !isEditing && (
         <div className="map-section">
-          <h3 className="section-subtitle">Localització</h3>
+          <h3 className="section-subtitle">{t('locationTitle')}</h3>
           <div className="map-wrapper">
             <MapContainer center={[restaurant.Location.latitude, restaurant.Location.longitude]} zoom={15} className="map-panel">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -193,10 +187,10 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
         </div>
       )}
 
-      <h3 className="section-subtitle">Alumnes en aquest establiment</h3>
+      <h3 className="section-subtitle">{t('studentsAtRestaurant')}</h3>
 
       {loading ? (
-        <p className="loader-inline">Carregant alumnat relacionat...</p>
+        <p className="loader-inline">{t('loadingRelatedStudents')}</p>
       ) : (
         <div className="worker-grid">
           {alumniWorkers.map((worker) => (
@@ -209,15 +203,15 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
               <img src={worker.alumniData.PhotoURL || 'https://via.placeholder.com/72x72?text=Foto'} alt={worker.alumniData.Name} className="worker-img" />
               <div className="worker-details">
                 <h4>{worker.alumniData.Name}</h4>
-                <p>{worker.rol || 'Càrrec no especificat'}</p>
+                <p>{worker.rol || t('roleNotSpecified')}</p>
                 <span className={`status-tag ${worker.current_job ? 'active' : 'past'}`}>
-                  {worker.current_job ? 'Actual' : 'Anterior'}
+                  {worker.current_job ? t('current') : t('previousShort')}
                 </span>
               </div>
             </button>
           ))}
 
-          {alumniWorkers.length === 0 && <p className="no-data">No hi ha alumnes vinculats a aquest restaurant.</p>}
+          {alumniWorkers.length === 0 && <p className="no-data">{t('noStudentsAtRestaurant')}</p>}
         </div>
       )}
     </div>

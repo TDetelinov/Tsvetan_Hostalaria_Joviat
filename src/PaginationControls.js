@@ -1,6 +1,8 @@
 import React from 'react';
+import { useI18n } from './i18n';
 
 const PaginationControls = ({ currentPage, pageSize, totalItems, onPageChange }) => {
+  const { t } = useI18n();
   const totalPages = Math.ceil(totalItems / pageSize);
 
   if (totalPages <= 1) {
@@ -10,14 +12,14 @@ const PaginationControls = ({ currentPage, pageSize, totalItems, onPageChange })
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
-    <nav className="pagination" aria-label="Paginació">
+    <nav className="pagination" aria-label={t('paginationLabel')}>
       <button
         type="button"
         className="pagination-button"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        Anterior
+        {t('previous')}
       </button>
 
       <div className="pagination-pages">
@@ -39,7 +41,7 @@ const PaginationControls = ({ currentPage, pageSize, totalItems, onPageChange })
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        Següent
+        {t('next')}
       </button>
     </nav>
   );

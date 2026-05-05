@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
 import { addDoc, collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
+import { useI18n } from './i18n';
 
 const createEmptyExperience = () => ({
   restaurantId: '',
@@ -8,11 +9,15 @@ const createEmptyExperience = () => ({
   isCurrentJob: false
 });
 
+const STATUS_STUDENT = 'student';
+const STATUS_ALUMNI = 'alumni';
+
 const AddStudent = ({ onBack }) => {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [phone, setPhone] = useState('');
-  const [status, setStatus] = useState('Alumne');
+  const [status, setStatus] = useState(STATUS_STUDENT);
   const [email, setEmail] = useState('');
   const [linkedIn, setLinkedIn] = useState('');
   const [restaurantsList, setRestaurantsList] = useState([]);
@@ -24,14 +29,14 @@ const AddStudent = ({ onBack }) => {
     const fetchRestaurants = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'Restaurant'));
-        const restaurants = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          Name: doc.data().Name
-        }));
-
-        setRestaurantsList(restaurants);
+        setRestaurantsList(
+          querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            Name: doc.data().Name
+          }))
+        );
       } catch (error) {
-        console.error('Error en carregar els restaurants:', error);
+        console.error('Error loading restaurants:', error);
       }
     };
 
@@ -39,7 +44,7 @@ const AddStudent = ({ onBack }) => {
   }, []);
 
   const handlePujarFoto = () => {
-    const url = window.prompt("Enganxa l'URL de la imatge de l'alumne:");
+    const url = window.prompt('URL');
     if (url) {
       setPhotoURL(url);
     }
@@ -73,7 +78,7 @@ const AddStudent = ({ onBack }) => {
     setMessage({ type: '', text: '' });
 
     if (!name.trim() || !email.trim()) {
-      setMessage({ type: 'error', text: 'El nom i l’adreça electrònica són obligatoris.' });
+      setMessage({ type: 'error', text: t('requiredNameEmail') });
       setLoading(false);
       return;
     }
@@ -101,17 +106,17 @@ const AddStudent = ({ onBack }) => {
         )
       );
 
-      setMessage({ type: 'success', text: 'L’alumne i la seva trajectòria s’han desat correctament.' });
+      setMessage({ type: 'success', text: t('studentSaved') });
       setName('');
       setPhotoURL('');
       setPhone('');
-      setStatus('Alumne');
+      setStatus(STATUS_STUDENT);
       setEmail('');
       setLinkedIn('');
       setExperiences([createEmptyExperience()]);
     } catch (error) {
-      console.error('Error en desar les dades:', error);
-      setMessage({ type: 'error', text: 'No s’han pogut desar les dades de l’alumne.' });
+      console.error('Error saving student:', error);
+      setMessage({ type: 'error', text: t('studentSaveError') });
     } finally {
       setLoading(false);
     }
@@ -119,25 +124,12 @@ const AddStudent = ({ onBack }) => {
 
   return (
     <form onSubmit={handleSubmit} className="admin-section-wrapper">
-      <p className="admin-label-top">Administració</p>
-      <h1 className="admin-main-title">Afegir alumne</h1>
-      <p className="admin-description">
-        Crea la fitxa de l’alumne i registra tots els restaurants on ha treballat o treballa actualment.
-      </p>
+      <p className="admin-label-top">{t('adminLabel')}</p>
+      <h1 className="admin-main-title">{t('addStudentTitle')}</h1>
+      <p className="admin-description">{t('addStudentDescription')}</p>
 
       {message.text && (
-        <div
-          className={`alert-message ${message.type}`}
-          style={{
-            padding: '15px',
-            borderRadius: '12px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            backgroundColor: message.type === 'success' ? '#e8f5e9' : '#ffebee',
-            color: message.type === 'success' ? '#2e7d32' : '#c62828',
-            fontWeight: '600'
-          }}
-        >
+        <div className={`alert-message ${message.type}`}>
           {message.text}
         </div>
       )}
@@ -146,40 +138,40 @@ const AddStudent = ({ onBack }) => {
         <div className="admin-card">
           <div className="photo-upload-container">
             <button type="button" className={`photo-circle ${photoURL ? 'has-photo' : ''}`} onClick={handlePujarFoto}>
-              {photoURL ? <img src={photoURL} alt="Previsualització de l’alumne" className="photo-img" /> : <span className="plus-icon">+</span>}
+              {photoURL ? <img src={photoURL} alt={t('photoProfile')} className="photo-img" /> : <span className="plus-icon">+</span>}
             </button>
-            <p className="pujar-foto-label">Foto de perfil</p>
+            <p className="pujar-foto-label">{t('photoProfile')}</p>
           </div>
 
           <div className="input-group">
-            <label>Estat</label>
+            <label>{t('statusLabel')}</label>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="Alumne">Alumne</option>
-              <option value="Exalumne">Exalumne</option>
+              <option value={STATUS_STUDENT}>{t('statusStudent')}</option>
+              <option value={STATUS_ALUMNI}>{t('statusAlumni')}</option>
             </select>
           </div>
         </div>
 
         <div className="admin-card">
-          <h3 className="admin-card-title">Informació principal</h3>
+          <h3 className="admin-card-title">{t('mainInformation')}</h3>
           <div className="form-grid">
             <div className="input-group full-width">
-              <label>Nom complet</label>
-              <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nom i cognoms" required />
+              <label>{t('fullNameLabel')}</label>
+              <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
             </div>
 
             <div className="input-group">
-              <label>Correu electrònic</label>
-              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="correu@joviat.cat" required />
+              <label>{t('emailLabel')}</label>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
             </div>
 
             <div className="input-group">
-              <label>Telèfon</label>
-              <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="600 000 000" />
+              <label>{t('phoneLabel')}</label>
+              <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
             </div>
 
             <div className="input-group full-width">
-              <label>LinkedIn</label>
+              <label>{t('linkedinLabel')}</label>
               <input type="url" value={linkedIn} onChange={(event) => setLinkedIn(event.target.value)} placeholder="https://linkedin.com/in/..." />
             </div>
           </div>
@@ -189,36 +181,34 @@ const AddStudent = ({ onBack }) => {
       <div className="admin-card trajectoria-card">
         <div className="trajectoria-header">
           <div>
-            <p className="admin-label-top">Trajectòria professional</p>
-            <h3 className="admin-card-title">Restaurants vinculats</h3>
+            <p className="admin-label-top">{t('professionalJourney')}</p>
+            <h3 className="admin-card-title">{t('linkedRestaurants')}</h3>
           </div>
           <button type="button" className="btn-secondary" onClick={addExperience}>
-            Afegir restaurant
+            {t('addRestaurantButton')}
           </button>
         </div>
 
-        <p className="form-note">
-          Pots indicar tants restaurants com calgui. Cada bloc representa una etapa professional diferent.
-        </p>
+        <p className="form-note">{t('journeyDescription')}</p>
 
         <div className="experience-list">
           {experiences.map((experience, index) => (
             <div key={`experience-${index}`} className="experience-card">
               <div className="experience-header">
-                <p className="experience-title">Experiència {index + 1}</p>
+                <p className="experience-title">{t('experienceTitle', { index: index + 1 })}</p>
                 <button type="button" className="btn-link" onClick={() => removeExperience(index)}>
-                  Eliminar
+                  {t('delete')}
                 </button>
               </div>
 
               <div className="form-grid">
                 <div className="input-group full-width">
-                  <label>Restaurant</label>
+                  <label>{t('restaurantLabel')}</label>
                   <select
                     value={experience.restaurantId}
                     onChange={(event) => updateExperience(index, 'restaurantId', event.target.value)}
                   >
-                    <option value="">Selecciona un restaurant</option>
+                    <option value="">{t('selectRestaurant')}</option>
                     {restaurantsList.map((restaurant) => (
                       <option key={restaurant.id} value={restaurant.id}>
                         {restaurant.Name}
@@ -228,12 +218,11 @@ const AddStudent = ({ onBack }) => {
                 </div>
 
                 <div className="input-group">
-                  <label>Rol o càrrec</label>
+                  <label>{t('roleLabel')}</label>
                   <input
                     type="text"
                     value={experience.role}
                     onChange={(event) => updateExperience(index, 'role', event.target.value)}
-                    placeholder="Ex.: cap de cuina, sommelier..."
                     disabled={!experience.restaurantId}
                   />
                 </div>
@@ -246,7 +235,7 @@ const AddStudent = ({ onBack }) => {
                     onChange={(event) => updateExperience(index, 'isCurrentJob', event.target.checked)}
                     disabled={!experience.restaurantId}
                   />
-                  <label htmlFor={`current-job-${index}`}>És la seva feina actual</label>
+                  <label htmlFor={`current-job-${index}`}>{t('currentJobLabel')}</label>
                 </div>
               </div>
             </div>
@@ -256,10 +245,10 @@ const AddStudent = ({ onBack }) => {
 
       <div className="form-submit-actions">
         <button type="button" className="btn-secondary" onClick={onBack}>
-          Cancel·lar
+          {t('cancel')}
         </button>
         <button type="submit" className="btn-joviat btn-submit" disabled={loading}>
-          {loading ? 'Desant...' : 'Desar alumne'}
+          {loading ? t('saving') : t('saveStudent')}
         </button>
       </div>
     </form>

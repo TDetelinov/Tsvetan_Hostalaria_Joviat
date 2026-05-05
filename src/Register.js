@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { auth, db } from './firebase';
 import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { addDoc, collection } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { useI18n } from './i18n';
 
 const Register = ({ onBack, onRequestSubmitted }) => {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,10 +35,10 @@ const Register = ({ onBack, onRequestSubmitted }) => {
       });
 
       await signOut(auth);
-      window.alert('Sol·licitud enviada. Quan l’administració la revisi ja podràs iniciar sessió.');
+      window.alert(t('requestSent'));
       onRequestSubmitted();
     } catch (submissionError) {
-      setError(`Error en el registre: ${submissionError.message}`);
+      setError(`Error: ${submissionError.message}`);
     } finally {
       setLoading(false);
     }
@@ -46,36 +48,52 @@ const Register = ({ onBack, onRequestSubmitted }) => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="section-header">
-          <p className="section-kicker">Nova sol·licitud</p>
-          <h2>Demanar alta</h2>
+          <p className="section-kicker">{t('registerKicker')}</p>
+          <h2>{t('registerTitle')}</h2>
           <div className="underline"></div>
         </div>
 
-        <p className="form-note">Omple les dades i l’equip administrador revisarà la petició abans de donar-te accés.</p>
+        <p className="form-note">{t('registerDescription')}</p>
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
-            <label>Nom complet</label>
-            <input type="text" value={formData.name} onChange={(event) => handleChange('name', event.target.value)} required />
+            <label>{t('fullNameLabel')}</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(event) => handleChange('name', event.target.value)}
+              required
+            />
           </div>
 
           <div className="input-group">
-            <label>Correu electrònic</label>
-            <input type="email" value={formData.email} onChange={(event) => handleChange('email', event.target.value)} required />
+            <label>{t('emailLabel')}</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(event) => handleChange('email', event.target.value)}
+              required
+            />
           </div>
 
           <div className="input-group">
-            <label>Contrasenya</label>
-            <input type="password" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} required minLength={6} />
+            <label>{t('passwordLabel')}</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(event) => handleChange('password', event.target.value)}
+              required
+              minLength={6}
+            />
           </div>
 
           {error && <p className="error-message">{error}</p>}
 
           <button type="submit" className="btn-joviat full-button" disabled={loading}>
-            {loading ? 'Enviant...' : 'Sol·licitar accés'}
+            {loading ? t('sending') : t('requestAccessButton')}
           </button>
           <button type="button" className="btn-secondary full-button" onClick={onBack}>
-            Tornar al login
+            {t('backToLogin')}
           </button>
         </form>
       </div>

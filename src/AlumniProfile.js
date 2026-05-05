@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
 import {
   collection,
   deleteDoc,
@@ -10,13 +9,35 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
+import { db } from './firebase';
+import { useI18n } from './i18n';
 
 const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
+  const { t } = useI18n();
   const [workHistory, setWorkHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...alumni });
   const [deleting, setDeleting] = useState(false);
+
+  const normalizeStatus = (status) => {
+    const normalized = (status || '').toLowerCase();
+
+    if (normalized === 'alumne' || normalized === 'alumno' || normalized === 'student') {
+      return 'student';
+    }
+
+    if (normalized === 'exalumne' || normalized === 'exalumno' || normalized === 'alumni') {
+      return 'alumni';
+    }
+
+    return 'student';
+  };
+
+  const translateStatus = (status) => {
+    const normalized = normalizeStatus(status);
+    return normalized === 'alumni' ? t('statusAlumni') : t('statusStudent');
+  };
 
   useEffect(() => {
     setEditData({ ...alumni });
@@ -45,7 +66,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
         setWorkHistory(historyData.filter((item) => item.restaurantData));
       } catch (error) {
-        console.error("Error en carregar l'historial:", error);
+        console.error("Error loading work history:", error);
       } finally {
         setLoading(false);
       }
@@ -56,8 +77,7 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
   const handleUpdate = async () => {
     try {
-      const alumniRef = doc(db, 'Alumni', alumni.id);
-      await updateDoc(alumniRef, {
+      await updateDoc(doc(db, 'Alumni', alumni.id), {
         Name: editData.Name,
         Email: editData.Email,
         Phone: editData.Phone,
@@ -66,16 +86,14 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
       });
 
       setIsEditing(false);
-      window.alert('Perfil actualitzat correctament.');
+      window.alert(t('profileSaved'));
     } catch (error) {
-      window.alert("Hi ha hagut un error en actualitzar el perfil.");
+      window.alert(t('profileSaveError'));
     }
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      "Segur que vols eliminar aquest alumne? També s'esborraran les vinculacions amb restaurants."
-    );
+    const confirmed = window.confirm(t('deleteStudentConfirm'));
 
     if (!confirmed) {
       return;
@@ -90,11 +108,11 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
       await Promise.all(relationSnapshot.docs.map((relationDoc) => deleteDoc(doc(db, 'Rest_Alum', relationDoc.id))));
       await deleteDoc(doc(db, 'Alumni', alumni.id));
 
-      window.alert("L'alumne s'ha eliminat correctament.");
+      window.alert(t('deleteStudentSuccess'));
       onBack();
     } catch (error) {
       console.error(error);
-      window.alert("No s'ha pogut eliminar l'alumne.");
+      window.alert(t('deleteStudentError'));
     } finally {
       setDeleting(false);
     }
@@ -104,24 +122,19 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
     <div className="profile-container">
       <div className="profile-nav-header">
         <button className="back-button" type="button" onClick={onBack}>
-          Tornar al llistat
+          {t('profileBackList')}
         </button>
 
         {isAdmin && (
           <div className="profile-actions">
             {isEditing && (
-              <button
-                className="btn-danger"
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? 'Eliminant...' : 'Eliminar alumne'}
+              <button className="btn-danger" type="button" onClick={handleDelete} disabled={deleting}>
+                {deleting ? t('deleting') : t('deleteStudent')}
               </button>
             )}
 
             <button className="btn-joviat" type="button" onClick={() => (isEditing ? handleUpdate() : setIsEditing(true))}>
-              {isEditing ? 'Desar canvis' : 'Editar fitxa'}
+              {isEditing ? t('saveChanges') : t('editRecord')}
             </button>
           </div>
         )}
@@ -144,46 +157,46 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
 
             <div className="status-container">
               {isEditing ? (
-                <select value={editData.Status || 'Alumne'} onChange={(event) => setEditData({ ...editData, Status: event.target.value })}>
-                  <option value="Alumne">Alumne</option>
-                  <option value="Exalumne">Exalumne</option>
+                <select value={normalizeStatus(editData.Status)} onChange={(event) => setEditData({ ...editData, Status: event.target.value })}>
+                  <option value="student">{t('statusStudent')}</option>
+                  <option value="alumni">{t('statusAlumni')}</option>
                 </select>
               ) : (
-                <span className="badge">{editData.Status || 'Alumne'}</span>
+                <span className="badge">{translateStatus(editData.Status)}</span>
               )}
             </div>
 
             <div className="contact-grid">
               <div className="contact-item">
-                <label className="contact-label">Correu electrònic</label>
+                <label className="contact-label">{t('emailLabel')}</label>
                 {isEditing ? (
                   <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
                 ) : (
-                  <p className="contact-value">{editData.Email || 'No indicat'}</p>
+                  <p className="contact-value">{editData.Email || t('notSpecified')}</p>
                 )}
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">Telèfon</label>
+                <label className="contact-label">{t('phoneLabel')}</label>
                 {isEditing ? (
                   <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
                 ) : (
-                  <p className="contact-value">{editData.Phone || 'No indicat'}</p>
+                  <p className="contact-value">{editData.Phone || t('notSpecified')}</p>
                 )}
               </div>
 
               <div className="contact-item">
-                <label className="contact-label">LinkedIn</label>
+                <label className="contact-label">{t('linkedinLabel')}</label>
                 {isEditing ? (
                   <input value={editData.LinkedIn || ''} onChange={(event) => setEditData({ ...editData, LinkedIn: event.target.value })} />
                 ) : (
                   <p className="contact-value">
                     {editData.LinkedIn ? (
                       <a href={editData.LinkedIn} target="_blank" rel="noreferrer">
-                        Veure perfil
+                        {t('publicProfile')}
                       </a>
                     ) : (
-                      'No indicat'
+                      t('notSpecified')
                     )}
                   </p>
                 )}
@@ -193,9 +206,9 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
         </div>
       </div>
 
-      <h3 className="section-subtitle">Trajectòria als restaurants</h3>
+      <h3 className="section-subtitle">{t('studentJourneyTitle')}</h3>
       {loading ? (
-        <p className="loader-inline">Carregant trajectòria...</p>
+        <p className="loader-inline">{t('loadingJourney')}</p>
       ) : (
         <div className="history-grid">
           {workHistory.map((work) => (
@@ -206,12 +219,12 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
               onClick={() => onNavigateRest({ id: work.id_restaurant, ...work.restaurantData })}
             >
               <h4>{work.restaurantData.Name}</h4>
-              <p className="role-text">{work.rol || 'Càrrec no especificat'}</p>
-              <div className="job-status">{work.current_job ? 'Feina actual' : 'Feina anterior'}</div>
+              <p className="role-text">{work.rol || t('roleNotSpecified')}</p>
+              <div className="job-status">{work.current_job ? t('currentWork') : t('previousWork')}</div>
             </button>
           ))}
 
-          {workHistory.length === 0 && <p className="no-data">No hi ha restaurants vinculats.</p>}
+          {workHistory.length === 0 && <p className="no-data">{t('noLinkedRestaurants')}</p>}
         </div>
       )}
     </div>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getAccessState } from './accessControl';
+import { auth } from './firebase';
+import { useI18n } from './i18n';
 
 const Login = ({ onLoginSuccess, onGoToRegister }) => {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -20,17 +22,13 @@ const Login = ({ onLoginSuccess, onGoToRegister }) => {
 
       if (!accessState.allowed) {
         await signOut(auth);
-        setError(
-          accessState.status === 'pendent'
-            ? 'La teva sol·licitud encara està pendent d’aprovació.'
-            : 'Aquest compte encara no té permís per accedir-hi.'
-        );
+        setError(accessState.status === 'pendent' ? t('pendingApproval') : t('noAccessYet'));
         return;
       }
 
       onLoginSuccess();
     } catch (err) {
-      setError('El correu o la contrasenya no són correctes.');
+      setError(t('invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -40,32 +38,32 @@ const Login = ({ onLoginSuccess, onGoToRegister }) => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="section-header">
-          <p className="section-kicker">Zona privada</p>
-          <h2>Accés privat</h2>
+          <p className="section-kicker">{t('loginKicker')}</p>
+          <h2>{t('loginTitle')}</h2>
           <div className="underline"></div>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="input-group">
-            <label>Correu electrònic</label>
+            <label>{t('emailLabel')}</label>
             <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
 
           <div className="input-group">
-            <label>Contrasenya</label>
+            <label>{t('passwordLabel')}</label>
             <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </div>
 
           {error && <p className="error-message">{error}</p>}
 
           <button type="submit" className="btn-joviat full-button" disabled={loading}>
-            {loading ? 'Entrant...' : 'Entrar'}
+            {loading ? t('loggingIn') : t('loginButton')}
           </button>
 
           <div className="register-prompt">
-            <p>No tens compte?</p>
+            <p>{t('noAccount')}</p>
             <button type="button" onClick={onGoToRegister} className="btn-link">
-              Sol·licitar alta d’usuari
+              {t('requestUserAccess')}
             </button>
           </div>
         </form>

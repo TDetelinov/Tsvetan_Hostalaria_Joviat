@@ -8,9 +8,12 @@ import AddRestaurant from './AddRestaurant';
 import AlumniProfile from './AlumniProfile';
 import RestaurantProfile from './RestaurantProfile';
 import ManageAltas from './ManageAltas';
+import UserProfile from './UserProfile';
+import RestaurantRequestForm from './RestaurantRequestForm';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { getAccessState } from './accessControl';
+import { useI18n } from './i18n';
 import './App.css';
 
 const IconHome = () => (
@@ -44,12 +47,32 @@ const IconPlus = () => (
   </svg>
 );
 
+const IconProfile = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21a8 8 0 0 0-16 0" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const IconMessage = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 function App() {
+  const { language, languages, setLanguage, t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState('home');
+  const [, setNavigationHistory] = useState([]);
   const [user, setUser] = useState(null);
+  const [userRecord, setUserRecord] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [viewStates, setViewStates] = useState({
+    students: { searchTerm: '', currentPage: 1 },
+    restaurants: { searchTerm: '', currentPage: 1, viewMode: 'map' }
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -61,6 +84,7 @@ function App() {
 
       if (!currentUser) {
         setUser(null);
+        setUserRecord(null);
         setIsAdmin(false);
         return;
       }
@@ -72,11 +96,13 @@ function App() {
 
       if (!accessState.allowed) {
         setUser(null);
+        setUserRecord(null);
         setIsAdmin(false);
         return;
       }
 
       setUser(currentUser);
+      setUserRecord(accessState.userRecord || null);
       setIsAdmin(accessState.isAdmin);
     });
 
@@ -86,15 +112,40 @@ function App() {
     };
   }, []);
 
-  const openView = (view) => {
+  const openView = (view, options = {}) => {
+    const { pushHistory = true, item = null } = options;
+
+    if (pushHistory && (currentView !== view || item !== selectedItem)) {
+      setNavigationHistory((history) => [...history, { view: currentView, selectedItem }]);
+    }
+
     setCurrentView(view);
+    setSelectedItem(item);
+    setMenuOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const goBack = (fallback = 'home') => {
+    setNavigationHistory((history) => {
+      const previousEntry = history[history.length - 1];
+
+      if (previousEntry) {
+        setCurrentView(previousEntry.view);
+        setSelectedItem(previousEntry.selectedItem || null);
+      } else {
+        setCurrentView(fallback);
+        setSelectedItem(null);
+      }
+
+      return history.slice(0, -1);
+    });
+
     setMenuOpen(false);
     window.scrollTo(0, 0);
   };
 
   const goToProfile = (type, data) => {
-    setSelectedItem(data);
-    openView(type === 'student' ? 'student-profile' : 'restaurant-profile');
+    openView(type === 'student' ? 'student-profile' : 'restaurant-profile', { item: data });
   };
 
   return (
@@ -103,7 +154,7 @@ function App() {
         <button
           className="burger-btn"
           type="button"
-          aria-label={menuOpen ? 'Tanca el menú' : 'Obre el menú'}
+          aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
           onClick={() => setMenuOpen((prev) => !prev)}
         >
           <span className={`burger-line top ${menuOpen ? 'open' : ''}`}></span>
@@ -112,32 +163,47 @@ function App() {
         </button>
 
         <button className="logo-container" type="button" onClick={() => openView('home')}>
-          <img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Logotip de Joviat" className="logo-img" />
+          <img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Joviat logo" className="logo-img" />
           <span className="logo-text">Hostaleria Joviat</span>
         </button>
 
-        {user && <div className={`user-indicator ${isAdmin ? 'admin-badge' : ''}`}>{isAdmin ? 'ADMIN' : user.email}</div>}
+        <div className="header-actions">
+          <label className="language-switcher">
+            <span>{t('languageLabel')}</span>
+            <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+              {Object.entries(languages).map(([code, values]) => (
+                <option key={code} value={code}>
+                  {values.languageName}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {user && <div className={`user-indicator ${isAdmin ? 'admin-badge' : ''}`}>{isAdmin ? 'ADMIN' : userRecord?.name || user.email}</div>}
+        </div>
       </header>
 
       <button
         type="button"
         className={`sidebar-overlay ${menuOpen ? 'open' : ''}`}
-        aria-label="Tanca el menú lateral"
+        aria-label={t('closeSidebar')}
         onClick={() => setMenuOpen(false)}
       ></button>
 
       <nav className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <ul className="nav-links">
-          <li onClick={() => openView('home')}><IconHome /> <span>Inici</span></li>
-          <li onClick={() => openView('students')}><IconUsers /> <span>Alumnes</span></li>
-          <li onClick={() => openView('restaurants')}><IconRest /> <span>Restaurants</span></li>
+          <li onClick={() => openView('home')}><IconHome /> <span>{t('navHome')}</span></li>
+          <li onClick={() => openView('students')}><IconUsers /> <span>{t('navStudents')}</span></li>
+          <li onClick={() => openView('restaurants')}><IconRest /> <span>{t('navRestaurants')}</span></li>
 
           <div className="sidebar-divider"></div>
 
           {!user ? (
-            <li className="login-link" onClick={() => openView('login')}>Accés privat</li>
+            <li className="login-link" onClick={() => openView('login')}>{t('navPrivateAccess')}</li>
           ) : (
             <>
+              <li onClick={() => openView('my-profile')}><IconProfile /> <span>{t('navMyProfile')}</span></li>
+              <li onClick={() => openView('restaurant-request')}><IconMessage /> <span>{t('navRestaurantRequest')}</span></li>
               <li
                 className="logout-link"
                 onClick={async () => {
@@ -145,15 +211,15 @@ function App() {
                   openView('home');
                 }}
               >
-                Tancar sessió
+                {t('navLogout')}
               </li>
 
               {isAdmin && (
                 <div className="admin-menu">
-                  <p className="sidebar-label">Gestió</p>
-                  <li onClick={() => openView('add-student')}><IconPlus /> <span>Nou alumne</span></li>
-                  <li onClick={() => openView('add-restaurant')}><IconPlus /> <span>Nou restaurant</span></li>
-                  <li onClick={() => openView('manage-altas')}><IconPlus /> <span>Altes</span></li>
+                  <p className="sidebar-label">{t('navManagement')}</p>
+                  <li onClick={() => openView('add-student')}><IconPlus /> <span>{t('navNewStudent')}</span></li>
+                  <li onClick={() => openView('add-restaurant')}><IconPlus /> <span>{t('navNewRestaurant')}</span></li>
+                  <li onClick={() => openView('manage-altas')}><IconPlus /> <span>{t('navRegistrations')}</span></li>
                 </div>
               )}
             </>
@@ -164,26 +230,54 @@ function App() {
       <main className={`main-content ${menuOpen ? 'shifted' : ''}`}>
         {currentView === 'home' && (
           <div className="home-hero">
-            <p className="hero-kicker">Escola Joviat de Manresa</p>
-            <h1 className="joviat-title">Xarxa Alumni d&apos;Hostaleria</h1>
+            <p className="hero-kicker">{t('heroKicker')}</p>
+            <h1 className="joviat-title">{t('appTitle')}</h1>
             <div className="underline"></div>
-            <p className="joviat-subtitle">
-              Una plataforma per connectar alumnat, exalumnat i restaurants vinculats al projecte de l&apos;escola.
-            </p>
+            <p className="joviat-subtitle">{t('appSubtitle')}</p>
+            <div className="hero-actions">
+              <button type="button" className="btn-joviat" onClick={() => openView('students')}>
+                {t('heroStudentsButton')}
+              </button>
+              <button type="button" className="btn-secondary hero-secondary" onClick={() => openView('restaurants')}>
+                {t('heroRestaurantsButton')}
+              </button>
+            </div>
           </div>
         )}
 
         {currentView === 'login' && <Login onLoginSuccess={() => openView('home')} onGoToRegister={() => openView('register')} />}
-        {currentView === 'register' && <Register onBack={() => openView('login')} onRequestSubmitted={() => openView('home')} />}
+        {currentView === 'register' && <Register onBack={() => goBack('login')} onRequestSubmitted={() => openView('home', { pushHistory: false })} />}
+        {currentView === 'my-profile' && userRecord && (
+          <UserProfile
+            userRecord={userRecord}
+            onBack={() => goBack('home')}
+            onProfileUpdated={(updatedRecord) => setUserRecord(updatedRecord)}
+          />
+        )}
+        {currentView === 'restaurant-request' && user && (
+          <RestaurantRequestForm user={user} userRecord={userRecord} onBack={() => goBack('home')} />
+        )}
 
-        {currentView === 'students' && <StudentList onSelect={(student) => goToProfile('student', student)} />}
-        {currentView === 'restaurants' && <RestaurantList onSelect={(restaurant) => goToProfile('restaurant', restaurant)} />}
+        {currentView === 'students' && (
+          <StudentList
+            onSelect={(student) => goToProfile('student', student)}
+            state={viewStates.students}
+            onStateChange={(nextState) => setViewStates((current) => ({ ...current, students: nextState }))}
+          />
+        )}
+        {currentView === 'restaurants' && (
+          <RestaurantList
+            onSelect={(restaurant) => goToProfile('restaurant', restaurant)}
+            state={viewStates.restaurants}
+            onStateChange={(nextState) => setViewStates((current) => ({ ...current, restaurants: nextState }))}
+          />
+        )}
 
         {currentView === 'student-profile' && selectedItem && (
           <AlumniProfile
             alumni={selectedItem}
             isAdmin={isAdmin}
-            onBack={() => openView('students')}
+            onBack={() => goBack('students')}
             onNavigateRest={(restaurant) => goToProfile('restaurant', restaurant)}
           />
         )}
@@ -192,14 +286,14 @@ function App() {
           <RestaurantProfile
             restaurant={selectedItem}
             isAdmin={isAdmin}
-            onBack={() => openView('restaurants')}
+            onBack={() => goBack('restaurants')}
             onNavigateAlumni={(student) => goToProfile('student', student)}
           />
         )}
 
-        {currentView === 'add-student' && <AddStudent onBack={() => openView('home')} />}
-        {currentView === 'add-restaurant' && <AddRestaurant onBack={() => openView('home')} />}
-        {currentView === 'manage-altas' && <ManageAltas onBack={() => openView('home')} />}
+        {currentView === 'add-student' && <AddStudent onBack={() => goBack('home')} />}
+        {currentView === 'add-restaurant' && <AddRestaurant onBack={() => goBack('home')} />}
+        {currentView === 'manage-altas' && <ManageAltas onBack={() => goBack('home')} />}
       </main>
     </div>
   );

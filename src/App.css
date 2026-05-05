@@ -123,10 +123,11 @@ a {
 }
 
 .logo-img {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  object-fit: cover;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  object-fit: contain;
+  background: var(--white);
   border: 1px solid rgba(197, 160, 89, 0.4);
 }
 
@@ -153,6 +154,43 @@ a {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.language-switcher select {
+  border: 0;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--white);
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 28px 6px 12px;
+  appearance: none;
+}
+
+.language-switcher select option {
+  color: var(--joviat-black);
+  background: var(--white);
 }
 
 .admin-badge {
@@ -269,8 +307,8 @@ a {
 .home-hero {
   position: relative;
   overflow: hidden;
-  min-height: 420px;
-  padding: clamp(48px, 7vw, 78px);
+  min-height: calc(100vh - 160px);
+  padding: clamp(56px, 8vw, 92px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -280,6 +318,23 @@ a {
     url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80') center/cover;
   box-shadow: var(--shadow-soft);
   color: var(--white);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+.hero-secondary {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.hero-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .home-hero::after {
@@ -360,6 +415,7 @@ a {
   align-items: center;
   gap: 12px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .results-counter {
@@ -418,6 +474,10 @@ a {
 .map-panel {
   width: 100%;
   height: 360px;
+}
+
+.map-panel-large {
+  height: 560px;
 }
 
 .map-wrapper-admin .map-panel {
@@ -790,6 +850,7 @@ a {
 
 .input-group input,
 .input-group select,
+.input-group textarea,
 .contact-item input,
 .edit-input-h2 {
   width: 100%;
@@ -798,6 +859,35 @@ a {
   padding: 15px 16px;
   background: var(--white);
   color: var(--joviat-ink);
+}
+
+.input-group textarea,
+.profile-textarea {
+  width: 100%;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 16px;
+  padding: 15px 16px;
+  background: var(--white);
+  color: var(--joviat-ink);
+  resize: vertical;
+  min-height: 120px;
+}
+
+.alert-message {
+  padding: 15px;
+  border-radius: 14px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.alert-message.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.alert-message.error {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .edit-input-h2 {
@@ -943,6 +1033,28 @@ a {
   justify-content: flex-end;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.view-switch {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.06);
+}
+
+.view-switch-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: var(--joviat-grey);
+  font-weight: 700;
+}
+
+.view-switch-button.active {
+  background: linear-gradient(135deg, var(--joviat-red), #b12c54);
+  color: var(--white);
 }
 
 .pagination {
@@ -1164,6 +1276,10 @@ a {
   text-transform: uppercase;
 }
 
+.section-header-tight {
+  margin-bottom: 20px;
+}
+
 .actions-column,
 .requests-actions {
   text-align: right;
@@ -1220,6 +1336,14 @@ a {
     display: none;
   }
 
+  .header-actions {
+    gap: 8px;
+  }
+
+  .language-switcher {
+    padding: 8px 10px;
+  }
+
   .sidebar {
     width: min(90vw, 320px);
     transform: translateX(-105%);
@@ -1234,7 +1358,7 @@ a {
   }
 
   .home-hero {
-    min-height: 360px;
+    min-height: 520px;
     padding: 36px 24px;
   }
 
@@ -1259,6 +1383,14 @@ a {
 @media (max-width: 560px) {
   .user-indicator {
     display: none;
+  }
+
+  .language-switcher span {
+    display: none;
+  }
+
+  .hero-actions {
+    flex-direction: column;
   }
 
   .burger-btn {

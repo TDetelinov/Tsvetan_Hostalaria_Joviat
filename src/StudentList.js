@@ -1,15 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
+import { useI18n } from './i18n';
 import PaginationControls from './PaginationControls';
 
 const PAGE_SIZE = 10;
 
-const StudentList = ({ onSelect }) => {
+const translateStatus = (status, t) => {
+  const normalized = (status || '').toLowerCase();
+
+  if (normalized === 'alumne' || normalized === 'alumno' || normalized === 'student') {
+    return t('statusStudent');
+  }
+
+  if (normalized === 'exalumne' || normalized === 'exalumno' || normalized === 'alumni') {
+    return t('statusAlumni');
+  }
+
+  return status || t('statusStudent');
+};
+
+const StudentList = ({ onSelect, state, onStateChange }) => {
+  const { t, tCount } = useI18n();
   const [alumni, setAlumni] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(state?.searchTerm || '');
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(state?.currentPage || 1);
 
   useEffect(() => {
     const fetchAlumni = async () => {
@@ -25,8 +41,12 @@ const StudentList = ({ onSelect }) => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  useEffect(() => {
+    onStateChange?.({ searchTerm, currentPage });
+  }, [searchTerm, currentPage, onStateChange]);
+
   if (loading) {
-    return <div className="loader">Carregant alumnes...</div>;
+    return <div className="loader">{t('loadingStudents')}</div>;
   }
 
   const filteredAlumni = alumni.filter((person) =>
@@ -40,8 +60,8 @@ const StudentList = ({ onSelect }) => {
   return (
     <section className="content-section">
       <div className="section-header">
-        <p className="section-kicker">Comunitat Joviat</p>
-        <h2>Els nostres alumnes</h2>
+        <p className="section-kicker">{t('studentSectionKicker')}</p>
+        <h2>{t('studentSectionTitle')}</h2>
         <div className="underline"></div>
       </div>
 
@@ -49,7 +69,7 @@ const StudentList = ({ onSelect }) => {
         <div className="search-input-wrapper">
           <input
             type="text"
-            placeholder="Cerca per nom..."
+            placeholder={t('searchStudents')}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -63,7 +83,7 @@ const StudentList = ({ onSelect }) => {
 
       <div className="results-toolbar">
         <p className="results-counter">
-          {totalItems} {totalItems === 1 ? 'alumne trobat' : 'alumnes trobats'}
+          {totalItems} {tCount('studentFound', totalItems)}
         </p>
       </div>
 
@@ -71,20 +91,24 @@ const StudentList = ({ onSelect }) => {
         {paginatedAlumni.map((person) => (
           <article key={person.id} className="card">
             <div className="card-img-container">
-              <img src={person.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'} className="card-img" alt={person.Name} />
+              <img
+                src={person.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'}
+                className="card-img"
+                alt={person.Name}
+              />
             </div>
             <div className="card-body">
               <h3>{person.Name}</h3>
-              <p>{person.Status || 'Alumni Joviat'}</p>
+              <p>{translateStatus(person.Status, t)}</p>
             </div>
             <button className="btn-joviat card-action" type="button" onClick={() => onSelect(person)}>
-              Veure perfil
+              {t('viewProfile')}
             </button>
           </article>
         ))}
       </div>
 
-      {filteredAlumni.length === 0 && <p className="no-data">No s&apos;han trobat alumnes amb aquest nom.</p>}
+      {filteredAlumni.length === 0 && <p className="no-data">{t('noStudentsFound')}</p>}
 
       <PaginationControls
         currentPage={currentPage}

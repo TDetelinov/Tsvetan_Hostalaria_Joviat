@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { db } from './firebase';
+import React, { useEffect, useMemo, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { db } from './firebase';
+import { useI18n } from './i18n';
 import PaginationControls from './PaginationControls';
+import 'leaflet/dist/leaflet.css';
 
 const PAGE_SIZE = 10;
-const CLUSTER_DISTANCE_METERS = 120;
+const CLUSTER_DISTANCE_METERS = 180;
+
 const markerIcon = L.icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -39,56 +41,87 @@ const createClusterIcon = (count) =>
   });
 
 const buildRestaurantClusters = (restaurants) => {
+  const positioned = restaurants.filter((restaurant) => restaurant.Location);
+  const visited = new Set();
   const clusters = [];
 
-  restaurants.forEach((restaurant) => {
-    if (!restaurant.Location) {
+  positioned.forEach((restaurant, index) => {
+    if (visited.has(index)) {
       return;
     }
 
-    const currentLocation = {
-      lat: restaurant.Location.latitude,
-      lng: restaurant.Location.longitude
-    };
+    const queue = [index];
+    const members = [];
+    visited.add(index);
 
-    const matchingCluster = clusters.find((cluster) => {
-      const distance = getDistanceMeters(
-        cluster.center.lat,
-        cluster.center.lng,
-        currentLocation.lat,
-        currentLocation.lng
-      );
+    while (queue.length > 0) {
+      const currentIndex = queue.shift();
+      const currentRestaurant = positioned[currentIndex];
+      members.push(currentRestaurant);
 
-      return distance <= CLUSTER_DISTANCE_METERS;
+      for (let nextIndex = 0; nextIndex < positioned.length; nextIndex += 1) {
+        if (visited.has(nextIndex)) {
+          continue;
+        }
+
+        const candidate = positioned[nextIndex];
+        const distance = getDistanceMeters(
+          currentRestaurant.Location.latitude,
+          currentRestaurant.Location.longitude,
+          candidate.Location.latitude,
+          candidate.Location.longitude
+        );
+
+        if (distance <= CLUSTER_DISTANCE_METERS) {
+          visited.add(nextIndex);
+          queue.push(nextIndex);
+        }
+      }
+    }
+
+    const sum = members.reduce(
+      (accumulator, current) => ({
+        lat: accumulator.lat + current.Location.latitude,
+        lng: accumulator.lng + current.Location.longitude
+      }),
+      { lat: 0, lng: 0 }
+    );
+
+    clusters.push({
+      id: `cluster-${members.map((member) => member.id).join('-')}`,
+      restaurants: members,
+      center: {
+        lat: sum.lat / members.length,
+        lng: sum.lng / members.length
+      }
     });
-
-    if (!matchingCluster) {
-      clusters.push({
-        id: `cluster-${restaurant.id}`,
-        restaurants: [restaurant],
-        center: currentLocation,
-        sumLat: currentLocation.lat,
-        sumLng: currentLocation.lng
-      });
-      return;
-    }
-
-    matchingCluster.restaurants.push(restaurant);
-    matchingCluster.sumLat += currentLocation.lat;
-    matchingCluster.sumLng += currentLocation.lng;
-    matchingCluster.center = {
-      lat: matchingCluster.sumLat / matchingCluster.restaurants.length,
-      lng: matchingCluster.sumLng / matchingCluster.restaurants.length
-    };
   });
 
   return clusters;
 };
 
-const getVisibleWorkers = (workers) => workers.slice(0, 3);
+const MapBoundsUpdater = ({ restaurants }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (restaurants.length === 0) {
+      map.setView([41.7286, 1.8219], 8);
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      restaurants.map((restaurant) => [restaurant.Location.latitude, restaurant.Location.longitude])
+    );
+
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+  }, [restaurants, map]);
+
+  return null;
+};
 
 const RestaurantPopupCard = ({ restaurant, onSelect }) => {
-  const visibleWorkers = getVisibleWorkers(restaurant.workers);
+  const { t, tCount } = useI18n();
+  const visibleWorkers = restaurant.workers.slice(0, 3);
   const remainingWorkers = restaurant.workers.length - visibleWorkers.length;
 
   return (
@@ -101,11 +134,11 @@ const RestaurantPopupCard = ({ restaurant, onSelect }) => {
 
       <div className="map-popup-body">
         <h4>{restaurant.Name}</h4>
-        <p>{restaurant.Address || 'Adreça no disponible'}</p>
+        <p>{restaurant.Address || t('popupNoAddress')}</p>
 
         <div className="popup-workers-summary">
           <span className="popup-workers-count">
-            {restaurant.workers.length} {restaurant.workers.length === 1 ? 'alumne vinculat' : 'alumnes vinculats'}
+            {restaurant.workers.length} {tCount('linkedStudents', restaurant.workers.length)}
           </span>
 
           <div className="popup-workers-avatars">
@@ -113,7 +146,7 @@ const RestaurantPopupCard = ({ restaurant, onSelect }) => {
               <img
                 key={worker.id}
                 src={worker.PhotoURL || 'https://via.placeholder.com/48x48?text=Alumne'}
-                alt={worker.Name || 'Alumne'}
+                alt={worker.Name || t('statusStudent')}
                 className="popup-worker-avatar"
               />
             ))}
@@ -123,18 +156,20 @@ const RestaurantPopupCard = ({ restaurant, onSelect }) => {
         </div>
 
         <button type="button" className="btn-joviat popup-detail-button" onClick={() => onSelect(restaurant)}>
-          Veure detalls
+          {t('viewDetails')}
         </button>
       </div>
     </article>
   );
 };
 
-const RestaurantList = ({ onSelect }) => {
+const RestaurantList = ({ onSelect, state, onStateChange }) => {
+  const { t, tCount } = useI18n();
   const [restaurants, setRestaurants] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(state?.searchTerm || '');
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(state?.currentPage || 1);
+  const [viewMode, setViewMode] = useState(state?.viewMode || 'map');
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -145,10 +180,7 @@ const RestaurantList = ({ onSelect }) => {
           getDocs(collection(db, 'Alumni'))
         ]);
 
-        const alumniById = new Map(
-          alumniSnapshot.docs.map((doc) => [doc.id, { id: doc.id, ...doc.data() }])
-        );
-
+        const alumniById = new Map(alumniSnapshot.docs.map((doc) => [doc.id, { id: doc.id, ...doc.data() }]));
         const workersByRestaurant = new Map();
 
         relationSnapshot.docs.forEach((relationDoc) => {
@@ -169,17 +201,13 @@ const RestaurantList = ({ onSelect }) => {
           }
         });
 
-        const enrichedRestaurants = restaurantSnapshot.docs.map((doc) => {
-          const restaurantWorkers = workersByRestaurant.get(doc.id) || [];
-
-          return {
+        setRestaurants(
+          restaurantSnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
-            workers: restaurantWorkers
-          };
-        });
-
-        setRestaurants(enrichedRestaurants);
+            workers: workersByRestaurant.get(doc.id) || []
+          }))
+        );
       } finally {
         setLoading(false);
       }
@@ -192,24 +220,36 @@ const RestaurantList = ({ onSelect }) => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  if (loading) {
-    return <div className="loader">Carregant restaurants...</div>;
-  }
+  useEffect(() => {
+    onStateChange?.({ searchTerm, currentPage, viewMode });
+  }, [searchTerm, currentPage, viewMode, onStateChange]);
 
-  const filteredRestaurants = restaurants.filter((restaurant) =>
-    restaurant.Name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRestaurants = useMemo(
+    () =>
+      restaurants.filter((restaurant) =>
+        restaurant.Name?.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [restaurants, searchTerm]
   );
+
+  const restaurantClusters = useMemo(
+    () => buildRestaurantClusters(filteredRestaurants),
+    [filteredRestaurants]
+  );
+
+  if (loading) {
+    return <div className="loader">{t('loadingRestaurants')}</div>;
+  }
 
   const totalItems = filteredRestaurants.length;
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedRestaurants = filteredRestaurants.slice(startIndex, startIndex + PAGE_SIZE);
-  const restaurantClusters = buildRestaurantClusters(filteredRestaurants);
 
   return (
     <section className="content-section">
       <div className="section-header">
-        <p className="section-kicker">Mapa de col·laboradors</p>
-        <h2>Restaurants vinculats</h2>
+        <p className="section-kicker">{t('restaurantSectionKicker')}</p>
+        <h2>{t('restaurantSectionTitle')}</h2>
         <div className="underline"></div>
       </div>
 
@@ -217,7 +257,7 @@ const RestaurantList = ({ onSelect }) => {
         <div className="search-input-wrapper">
           <input
             type="text"
-            placeholder="Cerca un restaurant..."
+            placeholder={t('searchRestaurants')}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -231,67 +271,93 @@ const RestaurantList = ({ onSelect }) => {
 
       <div className="results-toolbar">
         <p className="results-counter">
-          {totalItems} {totalItems === 1 ? 'restaurant trobat' : 'restaurants trobats'}
+          {totalItems} {tCount('restaurantFound', totalItems)}
         </p>
+
+        <div className="view-switch">
+          <button
+            type="button"
+            className={`view-switch-button ${viewMode === 'map' ? 'active' : ''}`}
+            onClick={() => setViewMode('map')}
+          >
+            {t('mapMode')}
+          </button>
+          <button
+            type="button"
+            className={`view-switch-button ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            {t('listMode')}
+          </button>
+        </div>
       </div>
 
-      <div className="map-wrapper">
-        <MapContainer center={[41.7286, 1.8219]} zoom={13} className="map-panel">
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {restaurantClusters.map((cluster) => (
-            <Marker
-              key={cluster.id}
-              position={[cluster.center.lat, cluster.center.lng]}
-              icon={cluster.restaurants.length > 1 ? createClusterIcon(cluster.restaurants.length) : markerIcon}
-            >
-              <Popup maxWidth={320}>
-                <div className="map-popup-group">
-                  {cluster.restaurants.length > 1 && (
-                    <div className="map-popup-group-header">
-                      <strong>{cluster.restaurants.length} restaurants en aquesta zona</strong>
-                    </div>
-                  )}
+      {viewMode === 'map' && (
+        <div className="map-wrapper">
+          <MapContainer center={[41.7286, 1.8219]} zoom={8} className="map-panel map-panel-large">
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <MapBoundsUpdater restaurants={filteredRestaurants.filter((restaurant) => restaurant.Location)} />
+            {restaurantClusters.map((cluster) => (
+              <Marker
+                key={cluster.id}
+                position={[cluster.center.lat, cluster.center.lng]}
+                icon={cluster.restaurants.length > 1 ? createClusterIcon(cluster.restaurants.length) : markerIcon}
+              >
+                <Popup maxWidth={320}>
+                  <div className="map-popup-group">
+                    {cluster.restaurants.length > 1 && (
+                      <div className="map-popup-group-header">
+                        <strong>{tCount('clusterTitle', cluster.restaurants.length)}</strong>
+                      </div>
+                    )}
 
-                  {cluster.restaurants.map((restaurant) => (
-                    <RestaurantPopupCard key={restaurant.id} restaurant={restaurant} onSelect={onSelect} />
-                  ))}
+                    {cluster.restaurants.map((restaurant) => (
+                      <RestaurantPopupCard key={restaurant.id} restaurant={restaurant} onSelect={onSelect} />
+                    ))}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+      )}
+
+      {viewMode === 'list' && (
+        <>
+          <div className="data-grid">
+            {paginatedRestaurants.map((restaurant) => (
+              <article key={restaurant.id} className="card">
+                <div className="card-img-container">
+                  <img
+                    src={restaurant.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'}
+                    className="card-img"
+                    alt={restaurant.Name}
+                  />
                 </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+                <div className="card-body">
+                  <h3>{restaurant.Name}</h3>
+                  <p>{restaurant.Address || t('noAddress')}</p>
+                  <p>
+                    {restaurant.workers.length} {tCount('linkedStudents', restaurant.workers.length)}
+                  </p>
+                </div>
+                <button className="btn-joviat card-action" type="button" onClick={() => onSelect(restaurant)}>
+                  {t('viewDetails')}
+                </button>
+              </article>
+            ))}
+          </div>
 
-      <div className="data-grid">
-        {paginatedRestaurants.map((restaurant) => (
-          <article key={restaurant.id} className="card">
-            <div className="card-img-container">
-              <img
-                src={restaurant.PhotoURL || 'https://via.placeholder.com/300x360?text=Sense+Foto'}
-                className="card-img"
-                alt={restaurant.Name}
-              />
-            </div>
-            <div className="card-body">
-              <h3>{restaurant.Name}</h3>
-              <p>{restaurant.Address || 'Sense adreça'}</p>
-              <p>{restaurant.workers.length} {restaurant.workers.length === 1 ? 'alumne vinculat' : 'alumnes vinculats'}</p>
-            </div>
-            <button className="btn-joviat card-action" type="button" onClick={() => onSelect(restaurant)}>
-              Veure detalls
-            </button>
-          </article>
-        ))}
-      </div>
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={PAGE_SIZE}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
 
-      {filteredRestaurants.length === 0 && <p className="no-data">No s&apos;han trobat restaurants amb aquest nom.</p>}
-
-      <PaginationControls
-        currentPage={currentPage}
-        pageSize={PAGE_SIZE}
-        totalItems={totalItems}
-        onPageChange={setCurrentPage}
-      />
+      {filteredRestaurants.length === 0 && <p className="no-data">{t('noRestaurantsFound')}</p>}
     </section>
   );
 };
