@@ -179,7 +179,14 @@ function App() {
             </select>
           </label>
 
-          {user && <div className={`user-indicator ${isAdmin ? 'admin-badge' : ''}`}>{isAdmin ? 'ADMIN' : userRecord?.name || user.email}</div>}
+          {user && (
+            <div className={`user-indicator ${isAdmin ? 'admin-badge' : ''}`}>
+              {!isAdmin && userRecord?.photoURL && (
+                <img src={userRecord.photoURL} alt={userRecord.name || user.email} className="user-avatar" />
+              )}
+              <span>{isAdmin ? user.email : (userRecord?.name || user.email)}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -207,6 +214,9 @@ function App() {
               <li
                 className="logout-link"
                 onClick={async () => {
+                  if (!window.confirm(t('logoutConfirm'))) {
+                    return;
+                  }
                   await signOut(auth);
                   openView('home');
                 }}
@@ -276,6 +286,7 @@ function App() {
         {currentView === 'student-profile' && selectedItem && (
           <AlumniProfile
             alumni={selectedItem}
+            isLoggedIn={!!user}
             isAdmin={isAdmin}
             onBack={() => goBack('students')}
             onNavigateRest={(restaurant) => goToProfile('restaurant', restaurant)}

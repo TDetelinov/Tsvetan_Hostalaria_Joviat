@@ -10,11 +10,12 @@ import 'leaflet/dist/leaflet.css';
 const PAGE_SIZE = 10;
 const CLUSTER_DISTANCE_METERS = 180;
 
-const markerIcon = L.icon({
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
+const markerIcon = L.divIcon({
+  html: `<div class="joviat-pin"><img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Joviat" /></div>`,
+  className: 'joviat-pin-wrapper',
+  iconSize: [36, 36],
+  iconAnchor: [18, 36],
+  popupAnchor: [0, -36]
 });
 
 const getDistanceMeters = (lat1, lng1, lat2, lng2) => {

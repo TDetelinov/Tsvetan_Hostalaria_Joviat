@@ -12,7 +12,7 @@ import {
 import { db } from './firebase';
 import { useI18n } from './i18n';
 
-const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
+const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin, isLoggedIn }) => {
   const { t } = useI18n();
   const [workHistory, setWorkHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,42 +166,46 @@ const AlumniProfile = ({ alumni, onBack, onNavigateRest, isAdmin }) => {
               )}
             </div>
 
-            <div className="contact-grid">
-              <div className="contact-item">
-                <label className="contact-label">{t('emailLabel')}</label>
-                {isEditing ? (
-                  <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
-                ) : (
-                  <p className="contact-value">{editData.Email || t('notSpecified')}</p>
-                )}
-              </div>
+            {isLoggedIn ? (
+              <div className="contact-grid">
+                <div className="contact-item">
+                  <label className="contact-label">{t('emailLabel')}</label>
+                  {isEditing ? (
+                    <input value={editData.Email || ''} onChange={(event) => setEditData({ ...editData, Email: event.target.value })} />
+                  ) : (
+                    <p className="contact-value">{editData.Email || t('notSpecified')}</p>
+                  )}
+                </div>
 
-              <div className="contact-item">
-                <label className="contact-label">{t('phoneLabel')}</label>
-                {isEditing ? (
-                  <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
-                ) : (
-                  <p className="contact-value">{editData.Phone || t('notSpecified')}</p>
-                )}
-              </div>
+                <div className="contact-item">
+                  <label className="contact-label">{t('phoneLabel')}</label>
+                  {isEditing ? (
+                    <input value={editData.Phone || ''} onChange={(event) => setEditData({ ...editData, Phone: event.target.value })} />
+                  ) : (
+                    <p className="contact-value">{editData.Phone || t('notSpecified')}</p>
+                  )}
+                </div>
 
-              <div className="contact-item">
-                <label className="contact-label">{t('linkedinLabel')}</label>
-                {isEditing ? (
-                  <input value={editData.LinkedIn || ''} onChange={(event) => setEditData({ ...editData, LinkedIn: event.target.value })} />
-                ) : (
-                  <p className="contact-value">
-                    {editData.LinkedIn ? (
-                      <a href={editData.LinkedIn} target="_blank" rel="noreferrer">
-                        {t('publicProfile')}
-                      </a>
-                    ) : (
-                      t('notSpecified')
-                    )}
-                  </p>
-                )}
+                <div className="contact-item">
+                  <label className="contact-label">{t('linkedinLabel')}</label>
+                  {isEditing ? (
+                    <input value={editData.LinkedIn || ''} onChange={(event) => setEditData({ ...editData, LinkedIn: event.target.value })} />
+                  ) : (
+                    <p className="contact-value">
+                      {editData.LinkedIn ? (
+                        <a href={editData.LinkedIn} target="_blank" rel="noreferrer">
+                          {t('publicProfile')}
+                        </a>
+                      ) : (
+                        t('notSpecified')
+                      )}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <p className="contact-hidden-notice">{t('loginToSeeContact')}</p>
+            )}
           </div>
         </div>
       </div>
