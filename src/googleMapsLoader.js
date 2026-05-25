@@ -14,27 +14,28 @@ export const loadGoogleMapsPlaces = (apiKey) => {
   }
 
   googleMapsPromise = new Promise((resolve, reject) => {
-    const callbackName = '__googleMapsPlacesReady';
-
     const existingScript = document.querySelector('script[data-google-maps-loader="true"]');
     if (existingScript) {
-      if (window.google?.maps?.places?.Autocomplete) {
-        resolve(window.google);
-      } else {
-        window[callbackName] = () => resolve(window.google);
-      }
+      const poll = setInterval(() => {
+        if (window.google?.maps?.places?.Autocomplete) {
+          clearInterval(poll);
+          resolve(window.google);
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(poll);
+        googleMapsPromise = null;
+        reject(new Error('Google Maps timeout'));
+      }, 10000);
       return;
     }
 
-    window[callbackName] = () => {
-      resolve(window.google);
-    };
-
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.dataset.googleMapsLoader = 'true';
+    script.onload = () => resolve(window.google);
     script.onerror = () => {
       googleMapsPromise = null;
       reject(new Error("No s'ha pogut carregar Google Maps."));
