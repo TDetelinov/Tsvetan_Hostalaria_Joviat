@@ -5,7 +5,7 @@ export const loadGoogleMapsPlaces = (apiKey) => {
     return Promise.reject(new Error("No s'ha definit cap clau de Google Maps."));
   }
 
-  if (window.google?.maps?.places) {
+  if (window.google?.maps?.places?.Autocomplete) {
     return Promise.resolve(window.google);
   }
 
@@ -14,21 +14,31 @@ export const loadGoogleMapsPlaces = (apiKey) => {
   }
 
   googleMapsPromise = new Promise((resolve, reject) => {
-    const existingScript = document.querySelector('script[data-google-maps-loader="true"]');
+    const callbackName = '__googleMapsPlacesReady';
 
+    const existingScript = document.querySelector('script[data-google-maps-loader="true"]');
     if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(window.google));
-      existingScript.addEventListener('error', () => reject(new Error("No s'ha pogut carregar Google Maps.")));
+      if (window.google?.maps?.places?.Autocomplete) {
+        resolve(window.google);
+      } else {
+        window[callbackName] = () => resolve(window.google);
+      }
       return;
     }
 
+    window[callbackName] = () => {
+      resolve(window.google);
+    };
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`;
     script.async = true;
     script.defer = true;
     script.dataset.googleMapsLoader = 'true';
-    script.onload = () => resolve(window.google);
-    script.onerror = () => reject(new Error("No s'ha pogut carregar Google Maps."));
+    script.onerror = () => {
+      googleMapsPromise = null;
+      reject(new Error("No s'ha pogut carregar Google Maps."));
+    };
     document.head.appendChild(script);
   });
 

@@ -175,6 +175,13 @@ a {
 .joviat-pin-wrapper {
   background: none !important;
   border: none !important;
+  pointer-events: auto !important;
+}
+
+.cluster-marker-wrapper {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: auto !important;
 }
 
 .joviat-pin {
@@ -536,11 +543,6 @@ a {
 
 .map-wrapper-admin .map-panel {
   height: 320px;
-}
-
-.cluster-marker-wrapper {
-  background: transparent;
-  border: 0;
 }
 
 .cluster-marker {

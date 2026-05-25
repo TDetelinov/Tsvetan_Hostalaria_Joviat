@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -8,30 +8,14 @@ import PaginationControls from './PaginationControls';
 import 'leaflet/dist/leaflet.css';
 
 const PAGE_SIZE = 10;
-const CLUSTER_DISTANCE_METERS = 180;
 
 const markerIcon = L.divIcon({
   html: `<div class="joviat-pin"><img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Joviat" /></div>`,
   className: 'joviat-pin-wrapper',
   iconSize: [36, 36],
   iconAnchor: [18, 36],
-  popupAnchor: [0, -36]
+  popupAnchor: [0, -40]
 });
-
-const getDistanceMeters = (lat1, lng1, lat2, lng2) => {
-  const toRadians = (degrees) => (degrees * Math.PI) / 180;
-  const earthRadius = 6371000;
-  const deltaLat = toRadians(lat2 - lat1);
-  const deltaLng = toRadians(lng2 - lng1);
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(deltaLng / 2) *
-      Math.sin(deltaLng / 2);
-
-  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
 
 const createClusterIcon = (count) =>
   L.divIcon({
@@ -41,64 +25,71 @@ const createClusterIcon = (count) =>
     iconAnchor: [21, 21]
   });
 
-const buildRestaurantClusters = (restaurants) => {
-  const positioned = restaurants.filter((restaurant) => restaurant.Location);
+const getDistanceMeters = (lat1, lng1, lat2, lng2) => {
+  const toRadians = (deg) => (deg * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const buildClusters = (restaurants, radiusMeters) => {
+  const positioned = restaurants.filter((r) => r.Location);
   const visited = new Set();
   const clusters = [];
 
   positioned.forEach((restaurant, index) => {
-    if (visited.has(index)) {
-      return;
-    }
+    if (visited.has(index)) return;
 
     const queue = [index];
     const members = [];
     visited.add(index);
 
     while (queue.length > 0) {
-      const currentIndex = queue.shift();
-      const currentRestaurant = positioned[currentIndex];
-      members.push(currentRestaurant);
+      const ci = queue.shift();
+      const cur = positioned[ci];
+      members.push(cur);
 
-      for (let nextIndex = 0; nextIndex < positioned.length; nextIndex += 1) {
-        if (visited.has(nextIndex)) {
-          continue;
-        }
-
-        const candidate = positioned[nextIndex];
-        const distance = getDistanceMeters(
-          currentRestaurant.Location.latitude,
-          currentRestaurant.Location.longitude,
-          candidate.Location.latitude,
-          candidate.Location.longitude
+      for (let ni = 0; ni < positioned.length; ni++) {
+        if (visited.has(ni)) continue;
+        const candidate = positioned[ni];
+        const dist = getDistanceMeters(
+          cur.Location.latitude, cur.Location.longitude,
+          candidate.Location.latitude, candidate.Location.longitude
         );
-
-        if (distance <= CLUSTER_DISTANCE_METERS) {
-          visited.add(nextIndex);
-          queue.push(nextIndex);
+        if (dist <= radiusMeters) {
+          visited.add(ni);
+          queue.push(ni);
         }
       }
     }
 
     const sum = members.reduce(
-      (accumulator, current) => ({
-        lat: accumulator.lat + current.Location.latitude,
-        lng: accumulator.lng + current.Location.longitude
-      }),
+      (acc, r) => ({ lat: acc.lat + r.Location.latitude, lng: acc.lng + r.Location.longitude }),
       { lat: 0, lng: 0 }
     );
 
     clusters.push({
-      id: `cluster-${members.map((member) => member.id).join('-')}`,
+      id: `cluster-${members.map((m) => m.id).join('-')}`,
       restaurants: members,
-      center: {
-        lat: sum.lat / members.length,
-        lng: sum.lng / members.length
-      }
+      center: { lat: sum.lat / members.length, lng: sum.lng / members.length }
     });
   });
 
   return clusters;
+};
+
+const getRadiusMetersForZoom = (map, pixelRadius) => {
+  const zoom = map.getZoom();
+  const center = map.getCenter();
+  const p1 = map.project(center, zoom);
+  const p2 = L.point(p1.x + pixelRadius, p1.y);
+  const ll2 = map.unproject(p2, zoom);
+  return center.distanceTo(ll2);
 };
 
 const MapBoundsUpdater = ({ restaurants }) => {
@@ -109,15 +100,65 @@ const MapBoundsUpdater = ({ restaurants }) => {
       map.setView([41.7286, 1.8219], 8);
       return;
     }
-
     const bounds = L.latLngBounds(
-      restaurants.map((restaurant) => [restaurant.Location.latitude, restaurant.Location.longitude])
+      restaurants.map((r) => [r.Location.latitude, r.Location.longitude])
     );
-
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
   }, [restaurants, map]);
 
   return null;
+};
+
+const DynamicClusters = ({ restaurants, onSelect }) => {
+  const map = useMap();
+  const { t, tCount } = useI18n();
+  const [clusters, setClusters] = useState([]);
+
+  const recalculate = useCallback(() => {
+    const radiusMeters = getRadiusMetersForZoom(map, 60);
+    setClusters(buildClusters(restaurants, radiusMeters));
+  }, [map, restaurants]);
+
+  useEffect(() => {
+    recalculate();
+    map.on('zoomend moveend', recalculate);
+    return () => {
+      map.off('zoomend moveend', recalculate);
+    };
+  }, [map, recalculate]);
+
+  return clusters.map((cluster) => {
+    if (cluster.restaurants.length > 1) {
+      return (
+        <Marker
+          key={cluster.id}
+          position={[cluster.center.lat, cluster.center.lng]}
+          icon={createClusterIcon(cluster.restaurants.length)}
+          eventHandlers={{
+            click: () => {
+              const bounds = L.latLngBounds(
+                cluster.restaurants.map((r) => [r.Location.latitude, r.Location.longitude])
+              );
+              map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.5 });
+            }
+          }}
+        />
+      );
+    }
+
+    const restaurant = cluster.restaurants[0];
+    return (
+      <Marker
+        key={cluster.id}
+        position={[restaurant.Location.latitude, restaurant.Location.longitude]}
+        icon={markerIcon}
+      >
+        <Popup maxWidth={300} minWidth={260}>
+          <RestaurantPopupCard restaurant={restaurant} onSelect={onSelect} />
+        </Popup>
+      </Marker>
+    );
+  });
 };
 
 const RestaurantPopupCard = ({ restaurant, onSelect }) => {
@@ -188,16 +229,14 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
           const relation = relationDoc.data();
           const worker = alumniById.get(relation.id_alumni);
 
-          if (!relation.id_restaurant || !worker) {
-            return;
-          }
+          if (!relation.id_restaurant || !worker) return;
 
           if (!workersByRestaurant.has(relation.id_restaurant)) {
             workersByRestaurant.set(relation.id_restaurant, []);
           }
 
           const currentWorkers = workersByRestaurant.get(relation.id_restaurant);
-          if (!currentWorkers.some((currentWorker) => currentWorker.id === worker.id)) {
+          if (!currentWorkers.some((w) => w.id === worker.id)) {
             currentWorkers.push(worker);
           }
         });
@@ -226,16 +265,8 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
   }, [searchTerm, currentPage, viewMode, onStateChange]);
 
   const filteredRestaurants = useMemo(
-    () =>
-      restaurants.filter((restaurant) =>
-        restaurant.Name?.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
+    () => restaurants.filter((r) => r.Name?.toLowerCase().includes(searchTerm.toLowerCase())),
     [restaurants, searchTerm]
-  );
-
-  const restaurantClusters = useMemo(
-    () => buildRestaurantClusters(filteredRestaurants),
-    [filteredRestaurants]
   );
 
   if (loading) {
@@ -245,6 +276,7 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
   const totalItems = filteredRestaurants.length;
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedRestaurants = filteredRestaurants.slice(startIndex, startIndex + PAGE_SIZE);
+  const positionedRestaurants = filteredRestaurants.filter((r) => r.Location);
 
   return (
     <section className="content-section">
@@ -295,30 +327,15 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
 
       {viewMode === 'map' && (
         <div className="map-wrapper">
-          <MapContainer center={[41.7286, 1.8219]} zoom={8} className="map-panel map-panel-large">
+          <MapContainer
+            center={[41.7286, 1.8219]}
+            zoom={8}
+            scrollWheelZoom={false}
+            className="map-panel map-panel-large"
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <MapBoundsUpdater restaurants={filteredRestaurants.filter((restaurant) => restaurant.Location)} />
-            {restaurantClusters.map((cluster) => (
-              <Marker
-                key={cluster.id}
-                position={[cluster.center.lat, cluster.center.lng]}
-                icon={cluster.restaurants.length > 1 ? createClusterIcon(cluster.restaurants.length) : markerIcon}
-              >
-                <Popup maxWidth={320}>
-                  <div className="map-popup-group">
-                    {cluster.restaurants.length > 1 && (
-                      <div className="map-popup-group-header">
-                        <strong>{tCount('clusterTitle', cluster.restaurants.length)}</strong>
-                      </div>
-                    )}
-
-                    {cluster.restaurants.map((restaurant) => (
-                      <RestaurantPopupCard key={restaurant.id} restaurant={restaurant} onSelect={onSelect} />
-                    ))}
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            <MapBoundsUpdater restaurants={positionedRestaurants} />
+            <DynamicClusters restaurants={filteredRestaurants} onSelect={onSelect} />
           </MapContainer>
         </div>
       )}

@@ -177,7 +177,7 @@ const RestaurantProfile = ({ restaurant, onBack, onNavigateAlumni, isAdmin }) =>
         <div className="map-section">
           <h3 className="section-subtitle">{t('locationTitle')}</h3>
           <div className="map-wrapper">
-            <MapContainer center={[restaurant.Location.latitude, restaurant.Location.longitude]} zoom={15} className="map-panel">
+            <MapContainer center={[restaurant.Location.latitude, restaurant.Location.longitude]} zoom={15} scrollWheelZoom={false} className="map-panel">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <Marker position={[restaurant.Location.latitude, restaurant.Location.longitude]} icon={markerIcon}>
                 <Popup>{restaurant.Name}</Popup>

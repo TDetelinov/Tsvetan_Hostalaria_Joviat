@@ -214,7 +214,7 @@ const AddRestaurant = ({ onBack }) => {
             {t('coordinatesLabel')}: {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
           </p>
           <div className="map-wrapper map-wrapper-admin">
-            <MapContainer center={[location.lat, location.lng]} zoom={15} className="map-panel">
+            <MapContainer center={[location.lat, location.lng]} zoom={15} scrollWheelZoom={false} className="map-panel">
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MapUpdater location={location} />
               <LocationMarker location={location} onLocationChange={setLocation} />
