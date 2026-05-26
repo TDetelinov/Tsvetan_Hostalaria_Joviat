@@ -248,7 +248,7 @@ function App() {
               <button type="button" className="btn-joviat" onClick={() => openView('students')}>
                 {t('heroStudentsButton')}
               </button>
-              <button type="button" className="btn-secondary hero-secondary" onClick={() => openView('restaurants')}>
+              <button type="button" className="btn-joviat" onClick={() => openView('restaurants')}>
                 {t('heroRestaurantsButton')}
               </button>
             </div>
