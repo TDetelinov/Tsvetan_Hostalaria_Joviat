@@ -53,6 +53,15 @@ const AddRestaurant = ({ onBack }) => {
   useEffect(() => {
     let autocompleteInstance = null;
     let cancelled = false;
+    const prevAuthFailure = window.gm_authFailure;
+
+    window.gm_authFailure = () => {
+      if (!cancelled) {
+        setPlacesState('error');
+        setPlacesMessage(t('googleMapsAuthFailed'));
+      }
+      if (typeof prevAuthFailure === 'function') prevAuthFailure();
+    };
 
     const loadPlaces = async () => {
       if (!GOOGLE_MAPS_API_KEY) {
@@ -67,36 +76,29 @@ const AddRestaurant = ({ onBack }) => {
       try {
         await loadGoogleMapsPlaces(GOOGLE_MAPS_API_KEY);
 
-        if (cancelled || !window.google?.maps?.places || !autocompleteInputRef.current) {
-          return;
+        if (cancelled) return;
+
+        if (!window.google?.maps?.places?.Autocomplete) {
+          throw new Error('Places API not available');
         }
+
+        if (!autocompleteInputRef.current) return;
 
         autocompleteInstance = new window.google.maps.places.Autocomplete(autocompleteInputRef.current, {
           fields: [
             'name',
             'formatted_address',
             'geometry',
-            'formatted_phone_number',
-            'website',
-            'url'
+            'formatted_phone_number'
           ]
         });
 
         autocompleteInstance.addListener('place_changed', () => {
           const place = autocompleteInstance.getPlace();
 
-          if (place?.name) {
-            setName(place.name);
-          }
-
-          if (place?.formatted_address) {
-            setAddress(place.formatted_address);
-          }
-
-          if (place?.formatted_phone_number) {
-            setPhone(place.formatted_phone_number);
-          }
-
+          if (place?.name) setName(place.name);
+          if (place?.formatted_address) setAddress(place.formatted_address);
+          if (place?.formatted_phone_number) setPhone(place.formatted_phone_number);
           if (place?.geometry?.location) {
             setLocation({
               lat: place.geometry.location.lat(),
@@ -108,7 +110,7 @@ const AddRestaurant = ({ onBack }) => {
         setPlacesState('ready');
         setPlacesMessage(t('googleMapsEnabled'));
       } catch (error) {
-        console.error(error);
+        console.error('Google Places error:', error);
         if (!cancelled) {
           setPlacesState('error');
           setPlacesMessage(t('googleMapsFailed'));
@@ -120,6 +122,7 @@ const AddRestaurant = ({ onBack }) => {
 
     return () => {
       cancelled = true;
+      window.gm_authFailure = prevAuthFailure;
       if (autocompleteInstance && window.google?.maps?.event) {
         window.google.maps.event.clearInstanceListeners(autocompleteInstance);
       }

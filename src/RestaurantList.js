@@ -1,99 +1,147 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, Marker, TileLayer, useMap, useMapEvent } from 'react-leaflet';
 import L from 'leaflet';
-import 'leaflet.markercluster';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { db } from './firebase';
 import { useI18n } from './i18n';
 import PaginationControls from './PaginationControls';
 import 'leaflet/dist/leaflet.css';
 
 const PAGE_SIZE = 9;
+const CLUSTER_RADIUS_PX = 55;
 
 const DEFAULT_RESTAURANT_IMG = 'https://via.placeholder.com/300x200?text=Restaurant';
 const DEFAULT_STUDENT_IMG = 'https://via.placeholder.com/48x48?text=Alumne';
 
-const markerIcon = L.divIcon({
-  html: `<div class="joviat-pin"><img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Joviat" /></div>`,
-  className: 'joviat-pin-wrapper',
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -40]
-});
+const makeMarkerIcon = () =>
+  L.divIcon({
+    html: `<div class="joviat-pin"><img src="https://shoponline.unilabor.com/c/51-category_default/joviat.jpg" alt="Joviat" /></div>`,
+    className: 'joviat-pin-wrapper',
+    iconSize: [36, 36],
+    iconAnchor: [18, 36]
+  });
+
+const makeClusterIcon = (count) =>
+  L.divIcon({
+    html: `<div class="cluster-marker">${count}</div>`,
+    className: 'cluster-marker-wrapper',
+    iconSize: [42, 42],
+    iconAnchor: [21, 21]
+  });
+
+const computeClusters = (restaurants, map) => {
+  const positioned = restaurants.filter((r) => r.Location);
+  if (!positioned.length || !map) return { clusters: [], singles: [] };
+
+  const points = positioned.map((r) => ({
+    r,
+    pt: map.latLngToContainerPoint([r.Location.latitude, r.Location.longitude])
+  }));
+
+  const used = new Set();
+  const clusters = [];
+  const singles = [];
+
+  points.forEach((p, i) => {
+    if (used.has(i)) return;
+    const group = [i];
+    points.forEach((q, j) => {
+      if (j === i || used.has(j)) return;
+      const dx = p.pt.x - q.pt.x;
+      const dy = p.pt.y - q.pt.y;
+      if (Math.sqrt(dx * dx + dy * dy) < CLUSTER_RADIUS_PX) {
+        group.push(j);
+      }
+    });
+    group.forEach((idx) => used.add(idx));
+
+    if (group.length === 1) {
+      singles.push(points[i].r);
+    } else {
+      const members = group.map((idx) => points[idx].r);
+      const allLats = members.map((r) => r.Location.latitude);
+      const allLngs = members.map((r) => r.Location.longitude);
+      clusters.push({
+        id: members
+          .map((r) => r.id)
+          .sort()
+          .join('|'),
+        lat: allLats.reduce((a, b) => a + b) / allLats.length,
+        lng: allLngs.reduce((a, b) => a + b) / allLngs.length,
+        count: members.length,
+        restaurants: members
+      });
+    }
+  });
+
+  return { clusters, singles };
+};
 
 const MapBoundsUpdater = ({ restaurants }) => {
   const map = useMap();
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current) return;
     const positioned = restaurants.filter((r) => r.Location);
     if (positioned.length === 0) {
       map.setView([41.7286, 1.8219], 8);
-      return;
+    } else {
+      const bounds = L.latLngBounds(
+        positioned.map((r) => [r.Location.latitude, r.Location.longitude])
+      );
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: false });
     }
-    const bounds = L.latLngBounds(
-      positioned.map((r) => [r.Location.latitude, r.Location.longitude])
-    );
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: false });
+    initialized.current = true;
   }, [restaurants, map]);
 
   return null;
 };
 
-const LeafletClusterGroup = ({ restaurants, onMarkerClick }) => {
+const MapMarkers = ({ restaurants, onMarkerClick }) => {
   const map = useMap();
-  const callbackRef = useRef(onMarkerClick);
-  const groupRef = useRef(null);
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  const markerIcon = useMemo(() => makeMarkerIcon(), []);
 
-  useEffect(() => {
-    callbackRef.current = onMarkerClick;
-  }, [onMarkerClick]);
+  useMapEvent('zoomend', () => {
+    setZoom(map.getZoom());
+  });
 
-  useEffect(() => {
-    const group = L.markerClusterGroup({
-      iconCreateFunction: (cluster) =>
-        L.divIcon({
-          html: `<div class="cluster-marker">${cluster.getChildCount()}</div>`,
-          className: 'cluster-marker-wrapper',
-          iconSize: [42, 42],
-          iconAnchor: [21, 21]
-        }),
-      maxClusterRadius: 80,
-      showCoverageOnHover: false,
-      spiderfyOnMaxZoom: true,
-      zoomToBoundsOnClick: true,
-      animate: false,
-      animateAddingMarkers: false
-    });
+  const { clusters, singles } = useMemo(
+    () => computeClusters(restaurants, map),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [restaurants, zoom]
+  );
 
-    groupRef.current = group;
-    map.addLayer(group);
-
-    return () => {
-      map.removeLayer(group);
-      groupRef.current = null;
-    };
-  }, [map]);
-
-  useEffect(() => {
-    const group = groupRef.current;
-    if (!group) return;
-
-    group.clearLayers();
-
-    restaurants.forEach((restaurant) => {
-      if (!restaurant.Location) return;
-      const marker = L.marker(
-        [restaurant.Location.latitude, restaurant.Location.longitude],
-        { icon: markerIcon }
-      );
-      marker.on('click', () => callbackRef.current(restaurant));
-      group.addLayer(marker);
-    });
-  }, [restaurants]);
-
-  return null;
+  return (
+    <>
+      {clusters.map((cluster) => (
+        <Marker
+          key={`cluster-${cluster.id}`}
+          position={[cluster.lat, cluster.lng]}
+          icon={makeClusterIcon(cluster.count)}
+          eventHandlers={{
+            click: () => {
+              const bounds = L.latLngBounds(
+                cluster.restaurants.map((r) => [r.Location.latitude, r.Location.longitude])
+              );
+              map.flyToBounds(bounds, { padding: [60, 60], animate: false });
+            }
+          }}
+        />
+      ))}
+      {singles.map((restaurant) => (
+        <Marker
+          key={`single-${restaurant.id}`}
+          position={[restaurant.Location.latitude, restaurant.Location.longitude]}
+          icon={markerIcon}
+          eventHandlers={{
+            click: () => onMarkerClick(restaurant)
+          }}
+        />
+      ))}
+    </>
+  );
 };
 
 const MapPopupOverlay = ({ restaurant, onClose, onSelect, t, tCount }) => {
@@ -102,7 +150,9 @@ const MapPopupOverlay = ({ restaurant, onClose, onSelect, t, tCount }) => {
 
   return (
     <div className="map-overlay-popup">
-      <button type="button" className="map-overlay-close" onClick={onClose} aria-label="Tancar">✕</button>
+      <button type="button" className="map-overlay-close" onClick={onClose} aria-label="Tancar">
+        ✕
+      </button>
       <img
         src={restaurant.PhotoURL || DEFAULT_RESTAURANT_IMG}
         alt={restaurant.Name}
@@ -111,7 +161,6 @@ const MapPopupOverlay = ({ restaurant, onClose, onSelect, t, tCount }) => {
       <div className="map-overlay-body">
         <h4 className="map-overlay-name">{restaurant.Name}</h4>
         {restaurant.Address && <p className="map-overlay-address">{restaurant.Address}</p>}
-
         {(restaurant.workers || []).length > 0 && (
           <div className="popup-workers-summary">
             <span className="popup-workers-count">
@@ -130,11 +179,13 @@ const MapPopupOverlay = ({ restaurant, onClose, onSelect, t, tCount }) => {
             </div>
           </div>
         )}
-
         <button
           type="button"
           className="btn-joviat popup-detail-button"
-          onClick={() => { onClose(); onSelect(restaurant); }}
+          onClick={() => {
+            onClose();
+            onSelect(restaurant);
+          }}
         >
           {t('viewDetails')}
         </button>
@@ -200,10 +251,7 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
   }, [searchTerm, currentPage, onStateChange]);
 
   const filteredRestaurants = useMemo(
-    () =>
-      restaurants.filter((r) =>
-        r.Name?.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
+    () => restaurants.filter((r) => r.Name?.toLowerCase().includes(searchTerm.toLowerCase())),
     [restaurants, searchTerm]
   );
 
@@ -254,7 +302,7 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapBoundsUpdater restaurants={filteredRestaurants} />
-          <LeafletClusterGroup
+          <MapMarkers
             restaurants={filteredRestaurants}
             onMarkerClick={setPopupRestaurant}
           />
