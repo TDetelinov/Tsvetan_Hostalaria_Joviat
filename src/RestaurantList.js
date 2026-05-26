@@ -122,10 +122,8 @@ const MapMarkers = ({ restaurants, onMarkerClick }) => {
           icon={makeClusterIcon(cluster.count)}
           eventHandlers={{
             click: () => {
-              const bounds = L.latLngBounds(
-                cluster.restaurants.map((r) => [r.Location.latitude, r.Location.longitude])
-              );
-              map.flyToBounds(bounds, { padding: [60, 60], animate: false });
+              const newZoom = Math.min(map.getZoom() + 3, 18);
+              map.setView([cluster.lat, cluster.lng], newZoom, { animate: false });
             }
           }}
         />
@@ -201,6 +199,7 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(state?.currentPage || 1);
   const [popupRestaurant, setPopupRestaurant] = useState(null);
+  const [viewMode, setViewMode] = useState(state?.viewMode || 'map');
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -247,8 +246,8 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
   }, [searchTerm]);
 
   useEffect(() => {
-    onStateChange?.({ searchTerm, currentPage });
-  }, [searchTerm, currentPage, onStateChange]);
+    onStateChange?.({ searchTerm, currentPage, viewMode });
+  }, [searchTerm, currentPage, viewMode, onStateChange]);
 
   const filteredRestaurants = useMemo(
     () => restaurants.filter((r) => r.Name?.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -291,69 +290,91 @@ const RestaurantList = ({ onSelect, state, onStateChange }) => {
         <p className="results-counter">
           {totalItems} {tCount('restaurantFound', totalItems)}
         </p>
-      </div>
-
-      <div className="map-wrapper map-wrapper-relative">
-        <MapContainer
-          center={[41.7286, 1.8219]}
-          zoom={8}
-          scrollWheelZoom={false}
-          className="map-panel map-panel-large"
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <MapBoundsUpdater restaurants={filteredRestaurants} />
-          <MapMarkers
-            restaurants={filteredRestaurants}
-            onMarkerClick={setPopupRestaurant}
-          />
-        </MapContainer>
-
-        {popupRestaurant && (
-          <MapPopupOverlay
-            restaurant={popupRestaurant}
-            onClose={() => setPopupRestaurant(null)}
-            onSelect={onSelect}
-            t={t}
-            tCount={tCount}
-          />
-        )}
-      </div>
-
-      <div className="data-grid" style={{ marginTop: '2rem' }}>
-        {paginatedRestaurants.map((restaurant) => (
-          <article
-            key={restaurant.id}
-            className="card card-clickable"
-            onClick={() => onSelect(restaurant)}
+        <div className="view-toggle">
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === 'map' ? 'active' : ''}`}
+            onClick={() => setViewMode('map')}
           >
-            <div className="card-img-container">
-              <img
-                src={restaurant.PhotoURL || DEFAULT_RESTAURANT_IMG}
-                className="card-img"
-                alt={restaurant.Name}
-              />
-            </div>
-            <div className="card-body">
-              <h3>{restaurant.Name}</h3>
-              <p>{restaurant.Address || t('noAddress')}</p>
-              <p>
-                {restaurant.workers.length} {tCount('linkedStudents', restaurant.workers.length)}
-              </p>
-            </div>
-          </article>
-        ))}
+            {t('viewMap')}
+          </button>
+          <button
+            type="button"
+            className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => { setViewMode('list'); setPopupRestaurant(null); }}
+          >
+            {t('viewList')}
+          </button>
+        </div>
       </div>
 
-      {filteredRestaurants.length === 0 && (
-        <p className="no-data">{t('noRestaurantsFound')}</p>
+      {viewMode === 'map' && (
+        <div className="map-wrapper map-wrapper-relative">
+          <MapContainer
+            center={[41.7286, 1.8219]}
+            zoom={8}
+            scrollWheelZoom={false}
+            className="map-panel map-panel-large"
+          >
+            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <MapBoundsUpdater restaurants={filteredRestaurants} />
+            <MapMarkers
+              restaurants={filteredRestaurants}
+              onMarkerClick={setPopupRestaurant}
+            />
+          </MapContainer>
+
+          {popupRestaurant && (
+            <MapPopupOverlay
+              restaurant={popupRestaurant}
+              onClose={() => setPopupRestaurant(null)}
+              onSelect={onSelect}
+              t={t}
+              tCount={tCount}
+            />
+          )}
+        </div>
       )}
 
-      <PaginationControls
-        currentPage={currentPage}
-        pageSize={PAGE_SIZE}
-        totalItems={totalItems}
-        onPageChange={setCurrentPage}
-      />
+      {viewMode === 'list' && (
+        <>
+          <div className="data-grid">
+            {paginatedRestaurants.map((restaurant) => (
+              <article
+                key={restaurant.id}
+                className="card card-clickable"
+                onClick={() => onSelect(restaurant)}
+              >
+                <div className="card-img-container">
+                  <img
+                    src={restaurant.PhotoURL || DEFAULT_RESTAURANT_IMG}
+                    className="card-img"
+                    alt={restaurant.Name}
+                  />
+                </div>
+                <div className="card-body">
+                  <h3>{restaurant.Name}</h3>
+                  <p>{restaurant.Address || t('noAddress')}</p>
+                  <p>
+                    {restaurant.workers.length} {tCount('linkedStudents', restaurant.workers.length)}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {filteredRestaurants.length === 0 && (
+            <p className="no-data">{t('noRestaurantsFound')}</p>
+          )}
+
+          <PaginationControls
+            currentPage={currentPage}
+            pageSize={PAGE_SIZE}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
     </section>
   );
 };
